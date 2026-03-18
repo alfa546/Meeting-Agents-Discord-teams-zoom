@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeetingAgent — AI Meeting Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: #111114;
+    --surface2: #18181c;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #f4f4f5;
+    --muted: #71717a;
+    --accent: #7c6aff;
+    --accent2: #a78bfa;
+    --accent-glow: rgba(124,106,255,0.2);
+    --green: #22c55e;
+    --red: #ef4444;
+    --discord: #5865f2;
+    --zoom: #2d8cff;
+    --meet: #34a853;
+    --teams: #6264a7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 600px; height: 600px; background: rgba(124,106,255,0.08); top: -200px; right: -200px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(34,197,94,0.05); bottom: -100px; left: -100px; }
+
+  /* Navbar */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 64px;
+    background: rgba(9,9,11,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  .nav-links { display: flex; align-items: center; gap: 8px; }
+
+  .btn-ghost {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border-hover); background: var(--surface); }
+
+  .btn-primary {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 30px var(--accent-glow); }
+
+  /* Pages */
+  .page { display: none; min-height: 100vh; position: relative; z-index: 1; }
+  .page.active { display: flex; }
+
+  /* ===== LANDING PAGE ===== */
+  #page-landing {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 40px 80px;
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid rgba(124,106,255,0.3);
+    background: rgba(124,106,255,0.08);
+    font-size: 12px;
+    color: var(--accent2);
+    font-weight: 500;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(48px, 7vw, 88px);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  h1 .accent { color: var(--accent); }
+  h1 .dim { color: var(--muted); }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.6;
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 80px;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+
+  .btn-large {
+    padding: 14px 32px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+
+  /* Platform badges */
+  .platforms {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s ease 0.4s both;
+    margin-bottom: 80px;
+  }
+
+  .platform-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .platform-icon { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+  /* Feature cards */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 900px;
+    width: 100%;
+    animation: fadeUp 0.6s ease 0.5s both;
+  }
+
+  .feature-card {
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-align: left;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .feature-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--accent-glow);
+    border: 1px solid rgba(124,106,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  .feature-card h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ===== AUTH PAGES ===== */
+  .auth-page {
+    align-items: center;
+    justify-content: center;
+    padding: 100px 20px;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .auth-card h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .auth-card .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .btn-full {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .btn-full:hover { background: var(--accent2); transform: translateY(-1px); }
+
+  .auth-switch {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .auth-switch a {
+    color: var(--accent2);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .auth-switch a:hover { text-decoration: underline; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider span { font-size: 12px; color: var(--muted); }
+
+  /* ===== DASHBOARD ===== */
+  #page-dashboard {
+    flex-direction: column;
+    padding-top: 64px;
+  }
+
+  .dashboard-layout {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    background: var(--surface);
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 0 12px;
+    margin-bottom: 8px;
+    margin-top: 20px;
+  }
+  .sidebar-label:first-child { margin-top: 0; }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+  }
+  .sidebar-item:hover { color: var(--text); background: var(--surface2); }
+  .sidebar-item.active { color: var(--text); background: var(--surface2); border-color: var(--border); }
+  .sidebar-item .si-icon { font-size: 16px; }
+
+  /* Main content */
+  .main-content {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+  }
+
+  .page-header { margin-bottom: 32px; }
+  .page-header h2 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .page-header p { color: var(--muted); font-size: 14px; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border-hover); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; }
+  .stat-change { font-size: 12px; color: var(--green); margin-top: 4px; }
+
+  /* Connect section */
+  .connect-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .connect-card {
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .connect-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+  .connect-card.connected { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.04); }
+
+  .connect-logo {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .connect-info { flex: 1; }
+  .connect-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .connect-desc { font-size: 12px; color: var(--muted); }
+
+  .connect-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 100px;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-connected { background: rgba(34,197,94,0.15); color: var(--green); }
+  .status-connected .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-disconnected { background: var(--surface2); color: var(--muted); }
+  .status-disconnected .status-dot { background: var(--muted); }
+
+  /* Recent meetings */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-header h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+
+  .meeting-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .meeting-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+  .meeting-item:hover { border-color: var(--border-hover); }
+
+  .meeting-platform {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .meeting-info { flex: 1; }
+  .meeting-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .meeting-meta { font-size: 12px; color: var(--muted); }
+
+  .meeting-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-weight: 500;
+  }
+  .badge-done { background: rgba(34,197,94,0.1); color: var(--green); }
+  .badge-live { background: rgba(239,68,68,0.1); color: var(--red); animation: badgePulse 1.5s ease infinite; }
+
+  @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* Quick join */
+  .quick-join {
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(124,106,255,0.2);
+    background: rgba(124,106,255,0.05);
+    margin-bottom: 32px;
+  }
+
+  .quick-join h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+
+  .join-input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .join-input-row input {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .join-input-row input:focus { border-color: var(--accent); }
+  .join-input-row input::placeholder { color: var(--muted); }
+
+  .btn-join {
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-join:hover { background: var(--accent2); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(34,197,94,0.3); }
+  .toast.error { border-color: rgba(239,68,68,0.3); }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* User avatar */
+  .user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 440px;
+    width: 90%;
+    animation: fadeUp 0.3s ease both;
+  }
+  .modal h3 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .modal p { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn-full { margin-top: 0; }
+
+  @media (max-width: 768px) {
+    .features { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .connect-grid { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    nav { padding: 0 20px; }
+    h1 { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="logo" href="#" onclick="showPage('landing')">
+    <div class="logo-dot"></div>
+    MeetingAgent
+  </a>
+  <div class="nav-links" id="nav-public">
+    <a class="btn-ghost" href="#" onclick="showPage('login')">Sign In</a>
+    <a class="btn-primary" href="#" onclick="showPage('register')">Get Started</a>
+  </div>
+  <div class="nav-links" id="nav-private" style="display:none;">
+    <span style="font-size:13px;color:var(--muted);margin-right:8px;" id="nav-username"></span>
+    <div class="user-avatar" id="user-avatar" onclick="logout()">N</div>
+  </div>
+</nav>
+
+<!-- ===== LANDING PAGE ===== -->
+<div class="page active" id="page-landing">
+  <div class="badge"><div class="badge-dot"></div> AI-Powered Meeting Intelligence</div>
+  <h1>Never Miss a<br><span class="accent">Meeting Insight</span><br><span class="dim">Again.</span></h1>
+  <p class="hero-sub">MeetingAgent automatically joins your meetings, transcribes everything, and delivers intelligent summaries — across all your platforms.</p>
+  <div class="hero-actions">
+    <button class="btn-primary btn-large" onclick="showPage('register')">Start for Free →</button>
+    <button class="btn-ghost btn-large" onclick="showPage('login')">Sign In</button>
+  </div>
+  <div class="platforms">
+    <div class="platform-badge"><div class="platform-icon" style="background:#5865f2;">💬</div> Discord</div>
+    <div class="platform-badge"><div class="platform-icon" style="background:#34a853;">📹</div> Google Meet</div>
+    <div class="platform-badge"><div class="platform-icon" style="background:#2d8cff;">🔵</div> Zoom</div>
+    <div class="platform-badge"><div class="platform-icon" style="background:#6264a7;">🟦</div> MS Teams</div>
+  </div>
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>Auto Join</h3>
+      <p>Paste a link and your AI agent joins the meeting automatically — no manual effort needed.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎙️</div>
+      <h3>Live Transcription</h3>
+      <p>Powered by Groq Whisper — real-time, accurate transcription in any language.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✨</div>
+      <h3>Smart Summary</h3>
+      <p>Get key points, action items, and decisions extracted automatically by LLaMA AI.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div class="page auth-page" id="page-login">
+  <div class="auth-card">
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to your MeetingAgent account</p>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••">
+    </div>
+
+    <button class="btn-full" onclick="handleLogin()">
+      <span id="login-text">Sign In</span>
+      <div class="spinner" id="login-spinner"></div>
+    </button>
+
+    <div class="auth-switch">
+      Don't have an account? <a onclick="showPage('register')">Create one</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REGISTER PAGE ===== -->
+<div class="page auth-page" id="page-register">
+  <div class="auth-card">
+    <h2>Create account</h2>
+    <p class="subtitle">Start automating your meetings today — it's free</p>
+
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="reg-name" placeholder="Nouman Ahmed">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="reg-password" placeholder="Min. 8 characters">
+    </div>
+
+    <button class="btn-full" onclick="handleRegister()">
+      <span id="reg-text">Create Account</span>
+      <div class="spinner" id="reg-spinner"></div>
+    </button>
+
+    <div class="auth-switch">
+      Already have an account? <a onclick="showPage('login')">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="page" id="page-dashboard">
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Main</div>
+      <div class="sidebar-item active" onclick="switchTab('overview')">
+        <span class="si-icon">📊</span> Overview
+      </div>
+      <div class="sidebar-item" onclick="switchTab('meetings')">
+        <span class="si-icon">📅</span> Meetings
+      </div>
+      <div class="sidebar-item" onclick="switchTab('summaries')">
+        <span class="si-icon">📝</span> Summaries
+      </div>
+
+      <div class="sidebar-label">Connections</div>
+      <div class="sidebar-item" onclick="showConnectModal('discord')">
+        <span class="si-icon">💬</span> Discord
+        <span id="sb-discord" style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block;"></span>
+      </div>
+      <div class="sidebar-item" onclick="showConnectModal('meet')">
+        <span class="si-icon">📹</span> Google Meet
+        <span id="sb-meet" style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block;"></span>
+      </div>
+      <div class="sidebar-item" onclick="showConnectModal('zoom')">
+        <span class="si-icon">🔵</span> Zoom
+        <span id="sb-zoom" style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block;"></span>
+      </div>
+      <div class="sidebar-item" onclick="showConnectModal('teams')">
+        <span class="si-icon">🟦</span> Teams
+        <span id="sb-teams" style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block;"></span>
+      </div>
+
+      <div class="sidebar-label">Account</div>
+      <div class="sidebar-item" onclick="logout()">
+        <span class="si-icon">🚪</span> Sign Out
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+      <div class="page-header">
+        <h2>Good day, <span id="dash-name">Nouman</span> 👋</h2>
+        <p>Your AI meeting agent is ready to work.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Meetings</div>
+          <div class="stat-value">24</div>
+          <div class="stat-change">↑ 3 this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Hours Saved</div>
+          <div class="stat-value">18h</div>
+          <div class="stat-change">↑ 2h this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Summaries</div>
+          <div class="stat-value">24</div>
+          <div class="stat-change">100% automated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Connected Apps</div>
+          <div class="stat-value" id="connected-count">0</div>
+          <div class="stat-change" style="color:var(--muted);">of 4 platforms</div>
+        </div>
+      </div>
+
+      <!-- Quick Join -->
+      <div class="quick-join">
+        <h3>⚡ Quick Join Meeting</h3>
+        <div class="join-input-row">
+          <input type="text" id="meeting-link" placeholder="Paste meeting link — meet.google.com/... or zoom.us/j/...">
+          <button class="btn-join" onclick="joinMeeting()">Join & Record</button>
+        </div>
+      </div>
+
+      <!-- Connect Platforms -->
+      <div class="section-header">
+        <h3>Connected Platforms</h3>
+        <span style="font-size:12px;color:var(--muted);">Click to connect</span>
+      </div>
+      <div class="connect-grid" style="margin-bottom:32px;">
+        <div class="connect-card" id="card-discord" onclick="showConnectModal('discord')">
+          <div class="connect-logo" style="background:rgba(88,101,242,0.15);">💬</div>
+          <div class="connect-info">
+            <div class="connect-name">Discord</div>
+            <div class="connect-desc">Bot joins voice channels, sends summaries to DM</div>
+          </div>
+          <div class="connect-status status-disconnected" id="status-discord">
+            <div class="status-dot"></div> Connect
+          </div>
+        </div>
+        <div class="connect-card" id="card-meet" onclick="showConnectModal('meet')">
+          <div class="connect-logo" style="background:rgba(52,168,83,0.15);">📹</div>
+          <div class="connect-info">
+            <div class="connect-name">Google Meet</div>
+            <div class="connect-desc">Auto-join scheduled and instant meetings</div>
+          </div>
+          <div class="connect-status status-disconnected" id="status-meet">
+            <div class="status-dot"></div> Connect
+          </div>
+        </div>
+        <div class="connect-card" id="card-zoom" onclick="showConnectModal('zoom')">
+          <div class="connect-logo" style="background:rgba(45,140,255,0.15);">🔵</div>
+          <div class="connect-info">
+            <div class="connect-name">Zoom</div>
+            <div class="connect-desc">Join Zoom meetings automatically via bot</div>
+          </div>
+          <div class="connect-status status-disconnected" id="status-zoom">
+            <div class="status-dot"></div> Connect
+          </div>
+        </div>
+        <div class="connect-card" id="card-teams" onclick="showConnectModal('teams')">
+          <div class="connect-logo" style="background:rgba(98,100,167,0.15);">🟦</div>
+          <div class="connect-info">
+            <div class="connect-name">Microsoft Teams</div>
+            <div class="connect-desc">Connect via Microsoft Graph API</div>
+          </div>
+          <div class="connect-status status-disconnected" id="status-teams">
+            <div class="status-dot"></div> Connect
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Meetings -->
+      <div class="section-header">
+        <h3>Recent Meetings</h3>
+        <button class="btn-ghost" style="font-size:12px;padding:5px 12px;">View all</button>
+      </div>
+      <div class="meeting-list">
+        <div class="meeting-item">
+          <div class="meeting-platform" style="background:rgba(88,101,242,0.15);">💬</div>
+          <div class="meeting-info">
+            <div class="meeting-title">Product Standup — Discord</div>
+            <div class="meeting-meta">Today, 9:00 AM · 32 minutes · 5 participants</div>
+          </div>
+          <span class="meeting-badge badge-done">✓ Summary Ready</span>
+        </div>
+        <div class="meeting-item">
+          <div class="meeting-platform" style="background:rgba(52,168,83,0.15);">📹</div>
+          <div class="meeting-info">
+            <div class="meeting-title">Client Demo — Google Meet</div>
+            <div class="meeting-meta">Yesterday, 3:00 PM · 45 minutes · 3 participants</div>
+          </div>
+          <span class="meeting-badge badge-done">✓ Summary Ready</span>
+        </div>
+        <div class="meeting-item">
+          <div class="meeting-platform" style="background:rgba(45,140,255,0.15);">🔵</div>
+          <div class="meeting-info">
+            <div class="meeting-title">Team Weekly — Zoom</div>
+            <div class="meeting-meta">Mar 17 · 60 minutes · 8 participants</div>
+          </div>
+          <span class="meeting-badge badge-done">✓ Summary Ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONNECT MODAL ===== -->
+<div class="modal-overlay" id="connect-modal">
+  <div class="modal">
+    <h3 id="modal-title">Connect Discord</h3>
+    <p id="modal-desc">Enter your Discord Bot Token and Server ID to connect your bot.</p>
+    <div id="modal-fields"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" style="flex:1;padding:12px;" onclick="closeModal()">Cancel</button>
+      <button class="btn-full" style="flex:2;" onclick="handleConnect()">Connect Platform</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✓</span>
+  <span id="toast-msg">Connected successfully!</span>
+</div>
+
+<script>
+  const connections = { discord: false, meet: false, zoom: false, teams: false };
+  let currentUser = null;
+  let currentModal = null;
+
+  const platformInfo = {
+    discord: {
+      title: 'Connect Discord',
+      desc: 'Enter your Discord Bot Token and Server ID to enable your AI agent on Discord.',
+      fields: [
+        { id: 'discord-token', label: 'Bot Token', type: 'password', placeholder: 'MTxxxxxxxxxxxxxxxxxxxxx' },
+        { id: 'discord-server', label: 'Server ID', type: 'text', placeholder: '123456789012345678' }
+      ]
+    },
+    meet: {
+      title: 'Connect Google Meet',
+      desc: 'Link your Google account to allow the bot to join your Google Meet meetings automatically.',
+      fields: [
+        { id: 'meet-email', label: 'Google Email', type: 'email', placeholder: 'you@gmail.com' }
+      ]
+    },
+    zoom: {
+      title: 'Connect Zoom',
+      desc: 'Enter your Zoom API credentials to enable automatic meeting joining.',
+      fields: [
+        { id: 'zoom-key', label: 'API Key', type: 'text', placeholder: 'Your Zoom API Key' },
+        { id: 'zoom-secret', label: 'API Secret', type: 'password', placeholder: 'Your Zoom API Secret' }
+      ]
+    },
+    teams: {
+      title: 'Connect Microsoft Teams',
+      desc: 'Enter your Microsoft Azure credentials to connect via Graph API.',
+      fields: [
+        { id: 'teams-tenant', label: 'Tenant ID', type: 'text', placeholder: 'Azure Tenant ID' },
+        { id: 'teams-client', label: 'Client ID', type: 'text', placeholder: 'Azure Client ID' }
+      ]
+    }
+  };
+
+  function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    if (page === 'dashboard') {
+      document.getElementById('nav-public').style.display = 'none';
+      document.getElementById('nav-private').style.display = 'flex';
+    } else {
+      document.getElementById('nav-public').style.display = 'flex';
+      document.getElementById('nav-private').style.display = 'none';
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    if (!email || !pass) { showToast('Please fill all fields', 'error'); return; }
+
+    const btn = document.querySelector('#page-login .btn-full');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="display:inline-block;margin:auto;"></div>';
+
+    setTimeout(() => {
+      currentUser = { name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1), email };
+      document.getElementById('dash-name').textContent = currentUser.name;
+      document.getElementById('nav-username').textContent = currentUser.name;
+      document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+      showToast('Welcome back, ' + currentUser.name + '! 👋', 'success');
+      showPage('dashboard');
+    }, 1200);
+  }
+
+  function handleRegister() {
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-password').value;
+    if (!name || !email || !pass) { showToast('Please fill all fields', 'error'); return; }
+    if (pass.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+
+    const btn = document.querySelector('#page-register .btn-full');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="display:inline-block;margin:auto;"></div>';
+
+    setTimeout(() => {
+      currentUser = { name, email };
+      document.getElementById('dash-name').textContent = name.split(' ')[0];
+      document.getElementById('nav-username').textContent = name.split(' ')[0];
+      document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+      btn.disabled = false;
+      btn.innerHTML = 'Create Account';
+      showToast('Account created! Welcome, ' + name.split(' ')[0] + '! 🎉', 'success');
+      showPage('dashboard');
+    }, 1200);
+  }
+
+  function logout() {
+    currentUser = null;
+    showPage('landing');
+    showToast('Signed out successfully', 'success');
+  }
+
+  function showConnectModal(platform) {
+    currentModal = platform;
+    const info = platformInfo[platform];
+    document.getElementById('modal-title').textContent = connections[platform] ? 'Disconnect ' + platform.charAt(0).toUpperCase() + platform.slice(1) : info.title;
+    document.getElementById('modal-desc').textContent = connections[platform] ? 'Are you sure you want to disconnect this platform? Your bot will stop working for this platform.' : info.desc;
+
+    const fieldsHtml = connections[platform] ? '' : info.fields.map(f => `
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>${f.label}</label>
+        <input type="${f.type}" id="${f.id}" placeholder="${f.placeholder}">
+      </div>
+    `).join('');
+
+    document.getElementById('modal-fields').innerHTML = fieldsHtml;
+    document.getElementById('connect-modal').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('connect-modal').classList.remove('show');
+  }
+
+  function handleConnect() {
+    const platform = currentModal;
+    if (connections[platform]) {
+      connections[platform] = false;
+      updateConnectionUI(platform, false);
+      showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' disconnected', 'error');
+    } else {
+      connections[platform] = true;
+      updateConnectionUI(platform, true);
+      showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' connected successfully! 🎉', 'success');
+    }
+    closeModal();
+    updateConnectedCount();
+  }
+
+  function updateConnectionUI(platform, connected) {
+    const statusEl = document.getElementById('status-' + platform);
+    const cardEl = document.getElementById('card-' + platform);
+    const sbEl = document.getElementById('sb-' + platform);
+
+    if (connected) {
+      statusEl.className = 'connect-status status-connected';
+      statusEl.innerHTML = '<div class="status-dot"></div> Connected';
+      cardEl.classList.add('connected');
+      sbEl.style.background = 'var(--green)';
+      sbEl.style.boxShadow = '0 0 6px var(--green)';
+    } else {
+      statusEl.className = 'connect-status status-disconnected';
+      statusEl.innerHTML = '<div class="status-dot"></div> Connect';
+      cardEl.classList.remove('connected');
+      sbEl.style.background = 'var(--muted)';
+      sbEl.style.boxShadow = 'none';
+    }
+  }
+
+  function updateConnectedCount() {
+    const count = Object.values(connections).filter(Boolean).length;
+    document.getElementById('connected-count').textContent = count;
+  }
+
+  function joinMeeting() {
+    const link = document.getElementById('meeting-link').value.trim();
+    if (!link) { showToast('Please paste a meeting link first', 'error'); return; }
+
+    const btn = document.querySelector('.btn-join');
+    btn.textContent = 'Joining...';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      btn.textContent = 'Join & Record';
+      btn.disabled = false;
+      document.getElementById('meeting-link').value = '';
+      showToast('🤖 Bot is joining the meeting and recording...', 'success');
+    }, 1500);
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    document.getElementById('toast-icon').textContent = type === 'success' ? '✓' : '✕';
+    toast.className = 'toast ' + type;
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }
+
+  document.getElementById('connect-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>
