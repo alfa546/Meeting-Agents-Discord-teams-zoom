@@ -1104,17 +1104,54 @@
     document.getElementById('connect-modal').classList.remove('show');
   }
 
-  function handleConnect() {
+  async function handleConnect() {
     const platform = currentModal;
+    
     if (connections[platform]) {
-      connections[platform] = false;
-      updateConnectionUI(platform, false);
-      showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' disconnected', 'error');
-    } else {
-      connections[platform] = true;
-      updateConnectionUI(platform, true);
-      showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' connected successfully! 🎉', 'success');
+        try {
+            await fetch('/api/platform/disconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    platform, 
+                    email: currentUser?.email || 'test@test.com' 
+                })
+            });
+            connections[platform] = false;
+            updateConnectionUI(platform, false);
+            showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' disconnected', 'error');
+        } catch(err) {
+            showToast('Disconnect failed', 'error');
+        }
+        closeModal();
+        updateConnectedCount();
+        return;
     }
+
+    const info = platformInfo[platform];
+    const credentials = { email: currentUser?.email || 'test@test.com' };
+    
+    info.fields.forEach(f => {
+        const val = document.getElementById(f.id)?.value;
+        if (val) credentials[f.id] = val;
+    });
+
+    try {
+        const res = await fetch('/api/platform/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform, credentials })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+
+        connections[platform] = true;
+        updateConnectionUI(platform, true);
+        showToast(platform.charAt(0).toUpperCase() + platform.slice(1) + ' connected! 🎉', 'success');
+    } catch(err) {
+        showToast(err.message || 'Connection failed', 'error');
+    }
+    
     closeModal();
     updateConnectedCount();
   }

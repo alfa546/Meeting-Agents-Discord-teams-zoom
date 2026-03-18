@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from db.models import init_db, SessionLocal, User, Platform, Meeting
 import hashlib
+import json
 import os
 
 def hash_password(password: str) -> str:
@@ -75,7 +76,48 @@ async def join_meeting(meeting: MeetingJoin):
 
 @app.post("/api/platform/connect")
 async def connect_platform(data: PlatformConnect):
+    db = SessionLocal()
+    existing = db.query(Platform).filter(
+        Platform.user_email == data.credentials.get("email", "test@test.com"),
+        Platform.platform == data.platform
+    ).first()
+    if existing:
+        existing.connected = True
+        existing.credentials = json.dumps(data.credentials)
+    else:
+        new_platform = Platform(
+            user_email=data.credentials.get("email", "test@test.com"),
+            platform=data.platform,
+            connected=True,
+            credentials=json.dumps(data.credentials)
+        )
+        db.add(new_platform)
+    db.commit()
+    db.close()
     return {"success": True, "message": f"{data.platform} connected successfully!"}
+
+@app.get("/api/platform/status/{email}")
+async def platform_status(email: str):
+    db = SessionLocal()
+    platforms = db.query(Platform).filter(Platform.user_email == email).all()
+    db.close()
+    result = {}
+    for p in platforms:
+        result[p.platform] = p.connected
+    return result
+
+@app.post("/api/platform/disconnect")
+async def disconnect_platform(data: dict):
+    db = SessionLocal()
+    platform = db.query(Platform).filter(
+        Platform.user_email == data.get("email"),
+        Platform.platform == data.get("platform")
+    ).first()
+    if platform:
+        platform.connected = False
+        db.commit()
+    db.close()
+    return {"success": True, "message": f"{data.get('platform')} disconnected"}
 
 @app.get("/api/health")
 async def health():
