@@ -29,6 +29,10 @@ async def join_google_meet(link: str, bot_name: str = "Meeting Bot"):
         await page.goto(link)
         await page.wait_for_timeout(3000)
 
+        # Screenshot lo — dekho bot ko kya dikh raha hai
+        await page.screenshot(path="debug_meet.png")
+        print("Screenshot saved — debug_meet.png")
+
         # Bot ka naam set karo
         try:
             # Multiple selectors try karo
