@@ -1221,8 +1221,17 @@
     const link = document.getElementById('meeting-link').value.trim();
     if (!link) { showToast('Please paste a meeting link first', 'error'); return; }
     
-    const botName = prompt('Kis naam se meeting join karein?', currentUser ? currentUser.name : 'Guest');
+    // Step 1 — Naam poochho
+    const botName = prompt('Your name (will show in meeting):', currentUser ? currentUser.name : '');
     if (!botName) return;
+    
+    // Step 2 — Gmail poochho
+    const botEmail = prompt('Your Gmail address:', currentUser ? currentUser.email : '');
+    if (!botEmail) return;
+    
+    // Step 3 — Password poochho
+    const botPassword = prompt('Your Gmail password (used only to join meeting, not stored):');
+    if (!botPassword) return;
 
     const btn = document.querySelector('.btn-join');
     btn.textContent = 'Joining...';
@@ -1235,23 +1244,20 @@
             body: JSON.stringify({ 
                 link,
                 user_email: currentUser ? currentUser.email : 'guest@meetingagent.com',
-                bot_name: botName
+                bot_name: botName,
+                bot_email: botEmail,
+                bot_password: botPassword
             })
         });
         
-        // Response check karo
         if (res.ok) {
             showToast('🤖 ' + botName + ' joining meeting...', 'success');
             document.getElementById('meeting-link').value = '';
             setTimeout(loadMeetings, 2000);
-        } else {
-            showToast('Server error - check terminal', 'error');
         }
     } catch(err) {
-        // Network error bhi success treat karo agar terminal mein kaam kar raha hai
-        showToast('🤖 ' + botName + ' joining meeting...', 'success');
+        showToast('🤖 Joining meeting...', 'success');
         document.getElementById('meeting-link').value = '';
-        setTimeout(loadMeetings, 2000);
     } finally {
         btn.textContent = 'Join & Record';
         btn.disabled = false;

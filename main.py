@@ -40,6 +40,8 @@ class MeetingJoin(BaseModel):
     link: str
     user_email: str = "guest@meetingagent.com"
     bot_name: str = "Meeting Bot"
+    bot_email: str = ""
+    bot_password: str = ""
 
 class PlatformConnect(BaseModel):
     platform: str
@@ -90,14 +92,23 @@ async def join_meeting(meeting: MeetingJoin):
     meeting_id = new_meeting.id
     db.close()
     
-    asyncio.create_task(process_meeting(meeting.link, meeting_id, meeting.bot_name))
+    asyncio.create_task(process_meeting(
+        meeting.link, 
+        meeting_id, 
+        meeting.bot_name,
+        meeting.bot_email,
+        meeting.bot_password
+    ))
     
     return {"success": True, "message": f"Bot joining as {meeting.bot_name}...", "meeting_id": meeting_id}
 
 
-async def process_meeting(link: str, meeting_id: str, bot_name: str = "Meeting Bot"):
+async def process_meeting(link: str, meeting_id: str, 
+                          bot_name: str = "Meeting Bot",
+                          bot_email: str = "",
+                          bot_password: str = ""):
     try:
-        await join_google_meet(link, bot_name)
+        await join_google_meet(link, bot_name, bot_email, bot_password)
         
         import os
         if not os.path.exists('recordings'):
