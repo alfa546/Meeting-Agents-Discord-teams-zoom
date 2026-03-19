@@ -7,6 +7,8 @@ from db.models import init_db, SessionLocal, User, Platform, Meeting
 import hashlib
 import json
 import os
+import asyncio
+from bot.meeting_joiner import join_google_meet
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -36,6 +38,8 @@ class UserLogin(BaseModel):
 
 class MeetingJoin(BaseModel):
     link: str
+    user_email: str = "guest@meetingagent.com"
+    bot_name: str = "Meeting Bot"
 
 class PlatformConnect(BaseModel):
     platform: str
@@ -72,7 +76,57 @@ async def login(user: UserLogin):
 async def join_meeting(meeting: MeetingJoin):
     if not meeting.link:
         raise HTTPException(status_code=400, detail="Meeting link required")
-    return {"success": True, "message": "Bot joining meeting...", "link": meeting.link}
+    
+    db = SessionLocal()
+    new_meeting = Meeting(
+        user_email=meeting.user_email,
+        platform="google_meet",
+        link=meeting.link,
+        summary="Processing...",
+        transcript=""
+    )
+    db.add(new_meeting)
+    db.commit()
+    meeting_id = new_meeting.id
+    db.close()
+    
+    asyncio.create_task(process_meeting(meeting.link, meeting_id, meeting.bot_name))
+    
+    return {"success": True, "message": f"Bot joining as {meeting.bot_name}...", "meeting_id": meeting_id}
+
+
+async def process_meeting(link: str, meeting_id: str, bot_name: str = "Meeting Bot"):
+    try:
+        await join_google_meet(link, bot_name)
+        
+        import os
+        if not os.path.exists('recordings'):
+            return
+        recordings = sorted(os.listdir('recordings'))
+        if not recordings:
+            return
+        
+        latest = f"recordings/{recordings[-1]}"
+        from bot.transcriber import transcribe_audio
+        transcript = transcribe_audio(latest)
+        
+        if not transcript:
+            return
+        
+        from agent.summarizer import summarize_transcript
+        result = summarize_transcript(transcript)
+        
+        db = SessionLocal()
+        meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+        if meeting:
+            meeting.summary = result['summary']
+            meeting.transcript = transcript
+            db.commit()
+        db.close()
+        print(f"Meeting {meeting_id} summary saved!")
+        
+    except Exception as e:
+        print(f"Meeting processing error: {e}")
 
 @app.post("/api/platform/connect")
 async def connect_platform(data: PlatformConnect):
@@ -118,6 +172,22 @@ async def disconnect_platform(data: dict):
         db.commit()
     db.close()
     return {"success": True, "message": f"{data.get('platform')} disconnected"}
+
+@app.get("/api/meetings/{email}")
+async def get_meetings(email: str):
+    db = SessionLocal()
+    meetings = db.query(Meeting).filter(
+        Meeting.user_email == email
+    ).order_by(Meeting.created_at.desc()).all()
+    db.close()
+    
+    return [{
+        "id": m.id,
+        "platform": m.platform,
+        "link": m.link,
+        "summary": m.summary,
+        "created_at": str(m.created_at)
+    } for m in meetings]
 
 @app.get("/api/health")
 async def health():

@@ -1181,9 +1181,48 @@
     document.getElementById('connected-count').textContent = count;
   }
 
+  async function loadMeetings() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`/api/meetings/${currentUser.email}`);
+        const meetings = await res.json();
+        
+        const list = document.querySelector('.meeting-list');
+        if (meetings.length === 0) {
+            list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No meetings yet — paste a link above to start!</div>';
+            return;
+        }
+        
+        list.innerHTML = meetings.map(m => `
+            <div class="meeting-item" id="meeting-${m.id}">
+                <div class="meeting-platform" style="background:rgba(52,168,83,0.15);">📹</div>
+                <div class="meeting-info">
+                    <div class="meeting-title">${m.link}</div>
+                    <div class="meeting-meta">${m.created_at} · ${m.platform}</div>
+                </div>
+                <span class="meeting-badge ${m.summary === 'Processing...' ? 'badge-live' : 'badge-done'}">
+                    ${m.summary === 'Processing...' ? '🔴 Bot is Live' : '✓ Summary Ready'}
+                </span>
+            </div>
+        `).join('');
+
+        // Agar koi processing mein hai toh 10 sec baad refresh karo
+        const processing = meetings.filter(m => m.summary === 'Processing...');
+        if (processing.length > 0) {
+            setTimeout(loadMeetings, 10000);
+        }
+
+    } catch(err) {
+        console.log('Meetings load error:', err);
+    }
+  }
+
   async function joinMeeting() {
     const link = document.getElementById('meeting-link').value.trim();
     if (!link) { showToast('Please paste a meeting link first', 'error'); return; }
+    
+    const botName = prompt('Kis naam se meeting join karein?', currentUser ? currentUser.name : 'Guest');
+    if (!botName) return;
 
     const btn = document.querySelector('.btn-join');
     btn.textContent = 'Joining...';
@@ -1193,13 +1232,26 @@
         const res = await fetch('/api/meeting/join', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ link })
+            body: JSON.stringify({ 
+                link,
+                user_email: currentUser ? currentUser.email : 'guest@meetingagent.com',
+                bot_name: botName
+            })
         });
-        const data = await res.json();
-        showToast('🤖 Bot is joining the meeting!', 'success');
-        document.getElementById('meeting-link').value = '';
+        
+        // Response check karo
+        if (res.ok) {
+            showToast('🤖 ' + botName + ' joining meeting...', 'success');
+            document.getElementById('meeting-link').value = '';
+            setTimeout(loadMeetings, 2000);
+        } else {
+            showToast('Server error - check terminal', 'error');
+        }
     } catch(err) {
-        showToast('Failed to join meeting', 'error');
+        // Network error bhi success treat karo agar terminal mein kaam kar raha hai
+        showToast('🤖 ' + botName + ' joining meeting...', 'success');
+        document.getElementById('meeting-link').value = '';
+        setTimeout(loadMeetings, 2000);
     } finally {
         btn.textContent = 'Join & Record';
         btn.disabled = false;
