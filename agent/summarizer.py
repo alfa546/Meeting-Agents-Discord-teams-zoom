@@ -21,7 +21,7 @@ You are a meeting assistant. Analyze this meeting transcript and provide:
 Transcript:
 {transcript}
 
-Respond in the same language as the transcript.
+Always respond in Roman Urdu (Urdu written in English letters). For example: "Is meeting 
 """
 
     response = client.chat.completions.create(
