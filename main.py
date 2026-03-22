@@ -229,8 +229,34 @@ async def get_meetings(email: str):
         "platform": m.platform,
         "link": m.link,
         "summary": m.summary,
+        "transcript": m.transcript,
         "created_at": str(m.created_at)
     } for m in meetings]
+
+
+@app.get("/api/meeting/analytics/{meeting_id}")
+async def meeting_analytics(meeting_id: str):
+    db = SessionLocal()
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    db.close()
+
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    transcript = (meeting.transcript or "").strip()
+    if not transcript:
+        raise HTTPException(status_code=400, detail="Transcript not ready for analytics")
+
+    try:
+        from agent.summarizer import analyze_transcript
+        analytics = analyze_transcript(transcript)
+        return {
+            "meeting_id": meeting_id,
+            "platform": meeting.platform,
+            "analytics": analytics
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analytics generation failed: {str(e)}")
 
 
 def _extract_meeting_link(event: dict) -> str:
@@ -371,6 +397,7 @@ import os
 
 @app.post("/api/transcribe")
 async def transcribe_audio_api(audio: UploadFile = File(...)):
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as tmp:
             content = await audio.read()
@@ -379,21 +406,30 @@ async def transcribe_audio_api(audio: UploadFile = File(...)):
         
         from bot.transcriber import transcribe_audio
         transcript = transcribe_audio(tmp_path)
-        
-        os.unlink(tmp_path)
-        
+
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
         return {"transcript": transcript}
     except Exception as e:
-        return {"transcript": "", "error": str(e)}
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
 @app.post("/api/summarize")
 async def summarize_api(data: SummarizeRequest):
     try:
         from agent.summarizer import summarize_transcript
+        if not (data.transcript or "").strip():
+            raise HTTPException(status_code=400, detail="Transcript is required for summary")
         result = summarize_transcript(data.transcript, data.language)
+        if not (result.get("summary") or "").strip():
+            raise HTTPException(status_code=500, detail="Summary generation returned empty output")
         return {"summary": result['summary'], "language": result.get("language", data.language)}
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"summary": "", "error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Summary generation failed: {str(e)}")
 
 @app.get("/api/health")
 async def health():

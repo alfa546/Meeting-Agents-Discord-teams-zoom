@@ -721,6 +721,108 @@
       color: #4f5a54;
     }
 
+    .meeting-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin-top: 0.7rem;
+    }
+
+    .analytics-card {
+      border: 1px solid #dbe4d7;
+      border-radius: 12px;
+      background: #ffffffcf;
+      padding: 0.7rem;
+    }
+
+    .analytics-card h4 {
+      margin: 0 0 0.45rem;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #526159;
+    }
+
+    .analytics-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .analytics-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: #253730;
+    }
+
+    .bar-wrap {
+      height: 8px;
+      border-radius: 999px;
+      background: #e6efe7;
+      overflow: hidden;
+      margin-top: 0.3rem;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #0ea57a, #1778f2);
+    }
+
+    .analytics-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 0.8rem;
+      margin-top: 0.5rem;
+    }
+
+    .analytics-list-panel {
+      border: 1px solid #dbe4d7;
+      border-radius: 14px;
+      background: #ffffffcf;
+      padding: 0.6rem;
+      max-height: 540px;
+      overflow-y: auto;
+    }
+
+    .analytics-meeting-btn {
+      width: 100%;
+      border: 1px solid #dbe4d7;
+      background: #f9fcf8;
+      border-radius: 11px;
+      padding: 0.5rem;
+      margin-bottom: 0.45rem;
+      text-align: left;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .analytics-meeting-btn.active {
+      border-color: #a7d9c8;
+      background: #ecfdf5;
+    }
+
+    .analytics-display-panel {
+      border: 1px solid #dbe4d7;
+      border-radius: 14px;
+      background: #ffffffcf;
+      padding: 0.75rem;
+      min-height: 220px;
+    }
+
     .badge {
       border-radius: 999px;
       font-size: 0.72rem;
@@ -1037,6 +1139,14 @@
         grid-template-columns: 1fr;
       }
 
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .analytics-layout {
+        grid-template-columns: 1fr;
+      }
+
       .join-row {
         grid-template-columns: 1fr;
       }
@@ -1284,6 +1394,7 @@
           <button id="side-overview" class="side-btn" onclick="setDashboardTab('overview')">Overview</button>
           <button id="side-meetings" class="side-btn" onclick="setDashboardTab('meetings')">Meetings</button>
           <button id="side-summaries" class="side-btn" onclick="setDashboardTab('summaries')">Summaries</button>
+          <button id="side-analytics" class="side-btn" onclick="setDashboardTab('analytics')">Meeting Analytics</button>
           <button id="side-room" class="side-btn" onclick="setDashboardTab('room')">Meeting Room</button>
         </div>
 
@@ -1378,10 +1489,30 @@
           <div class="content-head">
             <div>
               <h3 class="title">Summaries</h3>
-              <p class="subtitle">All AI generated summaries from your meeting archive.</p>
+              <p class="subtitle">All AI generated summaries and transcript preview from your meeting archive.</p>
             </div>
           </div>
           <div id="summaries-list" class="meeting-list"></div>
+        </section>
+
+        <section id="tab-analytics" class="content-panel hidden">
+          <div class="content-head">
+            <div>
+              <h3 class="title">Meeting Analytics</h3>
+              <p class="subtitle">Dedicated analytics view: speaker turns, topic breakdown, and sentiment.</p>
+            </div>
+            <button class="btn btn-ghost" onclick="renderAnalyticsMeetingsList()">Refresh List</button>
+          </div>
+
+          <div class="analytics-layout">
+            <aside id="analytics-meetings-list" class="analytics-list-panel">
+              <div class="instruction" style="margin:0;">Select a meeting to view analytics.</div>
+            </aside>
+
+            <div id="analytics-main" class="analytics-display-panel">
+              <div class="instruction" style="margin:0;">Meeting analytics yahan show honge.</div>
+            </div>
+          </div>
         </section>
 
         <section id="tab-room" class="content-panel hidden">
@@ -1530,6 +1661,22 @@
         </div>
 
         <button id="join-submit" class="btn btn-primary" style="width:100%; margin-top: 1rem;" onclick="submitJoinMeeting()">Join &amp; Record</button>
+      </div>
+    </section>
+
+    <section id="analytics-modal-wrap" class="modal-wrap" onclick="backdropClose(event, 'analytics-modal-wrap')">
+      <div class="modal fade-up" role="dialog" aria-modal="true">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:.6rem;">
+          <div>
+            <h3 class="modal-title">Meeting Analytics</h3>
+            <p id="analytics-subtitle" class="subtitle">Speaker turns, topic breakdown, and sentiment.</p>
+          </div>
+          <button class="btn btn-ghost" style="padding:.32rem .52rem;" onclick="closeModal('analytics-modal-wrap')">Close</button>
+        </div>
+
+        <div id="analytics-body" class="analytics-grid">
+          <div class="analytics-card"><h4>Loading</h4><p class="subtitle" style="margin:0;">Fetching analytics...</p></div>
+        </div>
       </div>
     </section>
 
@@ -1728,6 +1875,7 @@
       roomTranscript: "",
       roomSummary: "",
       roomChunkInFlight: false,
+      selectedAnalyticsMeetingId: null,
       refreshInterval: null
     };
 
@@ -1753,6 +1901,9 @@
         data = await response.json();
       } catch (err) {
         data = {};
+      }
+      if (response.ok && data && typeof data === "object" && data.error) {
+        throw new Error(data.error);
       }
       if (!response.ok) {
         const message = data.detail || data.message || "Request failed";
@@ -1879,7 +2030,7 @@
     }
 
     function activeSidebarButton(tab) {
-      ["overview", "meetings", "summaries", "room", "integrations", "account"].forEach((name) => {
+      ["overview", "meetings", "summaries", "analytics", "room", "integrations", "account"].forEach((name) => {
         const button = document.getElementById(`side-${name}`);
         button.classList.toggle("active", name === tab);
       });
@@ -1893,7 +2044,7 @@
       }
 
       state.dashboardTab = tab;
-      ["overview", "integrations", "meetings", "summaries", "room", "account"].forEach((name) => {
+      ["overview", "integrations", "meetings", "summaries", "analytics", "room", "account"].forEach((name) => {
         document.getElementById(`tab-${name}`).classList.toggle("hidden", name !== tab);
       });
       activeSidebarButton(tab);
@@ -1906,6 +2057,9 @@
       }
       if (tab === "summaries") {
         renderSummaries();
+      }
+      if (tab === "analytics") {
+        renderAnalyticsMeetingsList();
       }
       if (tab === "overview") {
         loadCalendarMeetings(false);
@@ -1982,6 +2136,7 @@
       }
       host.innerHTML = state.meetings.map((meeting) => {
         const meta = mapMeetingMeta(meeting);
+        const hasTranscript = Boolean((meeting.transcript || "").trim());
         return `
           <article class="meeting-item">
             <div class="platform-icon">${getMeetingPlatformIcon(meeting.platform)}</div>
@@ -1989,10 +2144,150 @@
               <p class="meeting-title">${escapeHtml(meeting.link)}</p>
               <p class="meeting-meta">${escapeHtml(meta.dateText)} • ${meta.duration} min • ${meta.participants} participants</p>
             </div>
-            ${meetingStatusBadge(meta.ready)}
+            <div class="meeting-actions">
+              ${meetingStatusBadge(meta.ready)}
+              <button class="btn btn-ghost" style="padding:.33rem .52rem; font-size:.75rem;" onclick="openMeetingAnalytics('${escapeHtml(meeting.id)}')" ${hasTranscript ? "" : "disabled"}>Analytics</button>
+            </div>
           </article>
         `;
       }).join("");
+    }
+
+    function renderAnalyticsInto(targetId, analytics, meetingId) {
+      const body = document.getElementById(targetId);
+      if (!body) {
+        return;
+      }
+
+      const speakers = analytics?.speaker_counts || [];
+      const topics = analytics?.topic_breakdown || [];
+      const sentiment = analytics?.sentiment || {};
+
+      body.innerHTML = `
+        <p class="subtitle" style="margin:0 0 .55rem;">Meeting ID: ${escapeHtml(meetingId)}</p>
+        <div class="analytics-grid" style="margin-top:0;">
+          <article class="analytics-card">
+            <h4>Who Spoke How Many Times</h4>
+            <ul class="analytics-list">${analyticsRows(speakers, "speaker", "turns", true)}</ul>
+          </article>
+
+          <article class="analytics-card">
+            <h4>Topic Breakdown</h4>
+            <ul class="analytics-list">${analyticsRows(topics, "topic", "share", true)}</ul>
+          </article>
+
+          <article class="analytics-card">
+            <h4>Sentiment Analysis</h4>
+            <ul class="analytics-list">
+              <li class="analytics-row"><span>Overall</span><strong>${escapeHtml(sentiment.overall || "Neutral")}</strong></li>
+              <li class="analytics-row"><span>Positive</span><strong>${Number(sentiment.positive || 0)}%</strong></li>
+              <li class="analytics-row"><span>Neutral</span><strong>${Number(sentiment.neutral || 0)}%</strong></li>
+              <li class="analytics-row"><span>Negative</span><strong>${Number(sentiment.negative || 0)}%</strong></li>
+            </ul>
+          </article>
+        </div>
+      `;
+    }
+
+    function renderAnalyticsMeetingsList() {
+      const host = document.getElementById("analytics-meetings-list");
+      if (!host) {
+        return;
+      }
+
+      const ready = state.meetings.filter((m) => (m.transcript || "").trim());
+      if (!ready.length) {
+        host.innerHTML = '<div class="instruction" style="margin:0;">Transcript ready meetings nahi milay. Pehle meeting process hone dein.</div>';
+        return;
+      }
+
+      host.innerHTML = ready.map((meeting) => {
+        const isActive = state.selectedAnalyticsMeetingId === meeting.id;
+        return `
+          <button class="analytics-meeting-btn ${isActive ? "active" : ""}" onclick="loadMeetingAnalyticsPanel('${escapeHtml(meeting.id)}')">
+            <p class="meeting-title" style="white-space:normal;">${escapeHtml(meeting.link)}</p>
+            <p class="meeting-meta">${escapeHtml(formatDateTime(meeting.created_at))}</p>
+          </button>
+        `;
+      }).join("");
+    }
+
+    async function loadMeetingAnalyticsPanel(meetingId) {
+      if (!meetingId) {
+        return;
+      }
+      state.selectedAnalyticsMeetingId = meetingId;
+      const main = document.getElementById("analytics-main");
+      if (main) {
+        main.innerHTML = '<div class="instruction" style="margin:0;">Analytics load ho raha hai...</div>';
+      }
+      renderAnalyticsMeetingsList();
+
+      try {
+        const result = await callApi(`/api/meeting/analytics/${encodeURIComponent(meetingId)}`);
+        renderAnalyticsInto("analytics-main", result.analytics || {}, meetingId);
+      } catch (err) {
+        if (main) {
+          main.innerHTML = `<div class="instruction" style="margin:0;">${escapeHtml(err.message || "Analytics unavailable")}</div>`;
+        }
+      }
+    }
+
+    function analyticsRows(items, keyField, valueField, withBars = false) {
+      if (!Array.isArray(items) || !items.length) {
+        return '<li class="analytics-row"><span>No data</span><span>-</span></li>';
+      }
+      return items.map((item) => {
+        const key = escapeHtml(item[keyField]);
+        const value = Number(item[valueField]) || 0;
+        const suffix = valueField === "share" ? "%" : "";
+        return `
+          <li>
+            <div class="analytics-row"><span>${key}</span><strong>${value}${suffix}</strong></div>
+            ${withBars ? `<div class="bar-wrap"><div class="bar" style="width:${Math.max(4, Math.min(100, value))}%"></div></div>` : ""}
+          </li>
+        `;
+      }).join("");
+    }
+
+    function renderAnalytics(analytics, meetingId) {
+      const body = document.getElementById("analytics-body");
+      const subtitle = document.getElementById("analytics-subtitle");
+      subtitle.textContent = `Meeting ID: ${meetingId}`;
+
+      const speakers = analytics?.speaker_counts || [];
+      const topics = analytics?.topic_breakdown || [];
+      const sentiment = analytics?.sentiment || {};
+
+      body.innerHTML = `
+        <article class="analytics-card">
+          <h4>Who Spoke How Many Times</h4>
+          <ul class="analytics-list">${analyticsRows(speakers, "speaker", "turns", true)}</ul>
+        </article>
+
+        <article class="analytics-card">
+          <h4>Topic Breakdown</h4>
+          <ul class="analytics-list">${analyticsRows(topics, "topic", "share", true)}</ul>
+        </article>
+
+        <article class="analytics-card">
+          <h4>Sentiment Analysis</h4>
+          <ul class="analytics-list">
+            <li class="analytics-row"><span>Overall</span><strong>${escapeHtml(sentiment.overall || "Neutral")}</strong></li>
+            <li class="analytics-row"><span>Positive</span><strong>${Number(sentiment.positive || 0)}%</strong></li>
+            <li class="analytics-row"><span>Neutral</span><strong>${Number(sentiment.neutral || 0)}%</strong></li>
+            <li class="analytics-row"><span>Negative</span><strong>${Number(sentiment.negative || 0)}%</strong></li>
+          </ul>
+        </article>
+      `;
+    }
+
+    async function openMeetingAnalytics(meetingId) {
+      if (!meetingId) {
+        return;
+      }
+      setDashboardTab("analytics");
+      await loadMeetingAnalyticsPanel(meetingId);
     }
 
     function renderSummaries() {
@@ -2011,6 +2306,7 @@
               <p class="meeting-title">${escapeHtml(meeting.link)}</p>
               <p class="meeting-meta">${escapeHtml(meta.dateText)}</p>
               <p class="meeting-meta" style="margin-top:.35rem; color:#24362e;">${escapeHtml(meeting.summary.slice(0, 260))}</p>
+              <p class="meeting-meta" style="margin-top:.35rem; color:#40524a;"><strong>Transcript:</strong> ${escapeHtml((meeting.transcript || "Not available").slice(0, 220))}</p>
             </div>
           </article>
         `;
@@ -2376,6 +2672,12 @@
         if (state.dashboardTab === "summaries") {
           renderSummaries();
         }
+        if (state.dashboardTab === "analytics") {
+          renderAnalyticsMeetingsList();
+          if (state.selectedAnalyticsMeetingId) {
+            loadMeetingAnalyticsPanel(state.selectedAnalyticsMeetingId);
+          }
+        }
         const stillProcessing = state.meetings.some((meeting) => !mapMeetingMeta(meeting).ready);
         if (!stillProcessing) {
           stopAutoRefresh();
@@ -2400,6 +2702,7 @@
       renderOverviewRecent();
       renderMeetingHistory();
       renderSummaries();
+      renderAnalyticsMeetingsList();
       renderIntegrations();
       loadCalendarMeetings(false);
       startAutoRefreshIfNeeded();
