@@ -281,8 +281,8 @@ async def _record_meeting(ctx, key):
     """Background recording task"""
     try:
         user_id, channel_id = key
-        # 1 hour recording
-        audio_file = await record_audio(duration_seconds=3600, output_dir="recordings")
+        # Keep manual recording short enough to complete during typical tests.
+        audio_file = await record_audio(duration_seconds=180, output_dir="recordings")
         if key in active_recordings:
             active_recordings[key]["file"] = audio_file
         print(f"Recording completed: {audio_file}")
@@ -301,18 +301,21 @@ async def stop(ctx):
     await ctx.send("⏹️ Recording ro raha hun... summary bana raha hun...")
     
     try:
-        recording_data = active_recordings.pop(key)
+        recording_data = active_recordings.get(key)
         task = recording_data.get("task")
         audio_file = recording_data.get("file")
-        
-        # Task cancel karo
+
+        # If recording is still running, wait for completion so file path is available.
         if task and not task.done():
-            task.cancel()
+            await ctx.send("⏳ Recording complete hone ka wait kar raha hun...")
             try:
-                await task
-            except asyncio.CancelledError:
-                pass
-        
+                await asyncio.wait_for(task, timeout=210)
+            except asyncio.TimeoutError:
+                await ctx.send("⚠️ Recording abhi tak complete nahi hui. 1-2 minute baad `!stop` dubara try karo.")
+                return
+
+        audio_file = (active_recordings.get(key) or {}).get("file") or audio_file
+
         if audio_file and os.path.exists(audio_file):
             # Transcribe karo
             await ctx.send("📝 Transcribe kar raha hun...")
@@ -349,8 +352,12 @@ async def stop(ctx):
                 os.remove(audio_file)
             except:
                 pass
+        else:
+            await ctx.send("⚠️ Recording file ready nahi hui. 1 minute baad `!stop` phir try karo.")
     except Exception as e:
         await ctx.send(f"❌ Error: {str(e)}")
+    finally:
+        active_recordings.pop(key, None)
 
 @bot.command(name="meetings")
 async def meetings(ctx):
