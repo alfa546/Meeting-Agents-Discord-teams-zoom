@@ -18,7 +18,8 @@ intents.message_content = True
 intents.members = True
 intents.voice_states = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+# Disable default help command to create our own
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # Track active recordings: {(user_id, channel_id): {"task": asyncio.Task, "file": str}}
 active_recordings = {}
