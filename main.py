@@ -8,6 +8,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.requests import Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+import requests
 
 from db.models import Platform, SessionLocal, User, init_db
 
@@ -47,6 +48,63 @@ class PlatformConnect(BaseModel):
 
 
 SUPPORTED_PLATFORMS = {"discord", "gmail", "whatsapp"}
+
+
+def _extract_discord_credentials(credentials: dict) -> tuple[str, str]:
+    token = (
+        (credentials or {}).get("discord-token")
+        or (credentials or {}).get("token")
+        or (credentials or {}).get("bot_token")
+        or ""
+    ).strip()
+    guild_id = (
+        (credentials or {}).get("discord-server")
+        or (credentials or {}).get("server_id")
+        or (credentials or {}).get("guild_id")
+        or ""
+    ).strip()
+    return token, guild_id
+
+
+def _validate_discord_credentials(token: str, guild_id: str) -> str | None:
+    if not token:
+        raise HTTPException(status_code=400, detail="Discord Bot Token is required.")
+    if not guild_id:
+        raise HTTPException(status_code=400, detail="Discord Server ID is required.")
+    if not guild_id.isdigit():
+        raise HTTPException(status_code=400, detail="Discord Server ID must be numeric.")
+
+    auth_token = token[4:] if token.lower().startswith("bot ") else token
+    headers = {"Authorization": f"Bot {auth_token}"}
+
+    try:
+        me_response = requests.get("https://discord.com/api/v10/users/@me", headers=headers, timeout=12)
+    except requests.RequestException:
+        return "Discord API could not be reached right now. Saved as connected locally; retry later for full verification."
+
+    if me_response.status_code == 401:
+        raise HTTPException(status_code=400, detail="Invalid Discord Bot Token.")
+    if me_response.status_code >= 400:
+        raise HTTPException(status_code=400, detail="Discord bot validation failed.")
+
+    try:
+        guild_response = requests.get(
+            f"https://discord.com/api/v10/guilds/{guild_id}",
+            headers=headers,
+            timeout=12,
+        )
+    except requests.RequestException:
+        return "Discord server verification is temporarily unavailable. Saved as connected locally."
+
+    if guild_response.status_code == 401:
+        raise HTTPException(status_code=400, detail="Invalid Discord Bot Token.")
+    if guild_response.status_code == 403:
+        raise HTTPException(status_code=400, detail="Bot is not a member of this Discord server.")
+    if guild_response.status_code == 404:
+        raise HTTPException(status_code=400, detail="Discord server not found for this bot.")
+    if guild_response.status_code >= 400:
+        raise HTTPException(status_code=400, detail="Discord server validation failed.")
+    return None
 
 # ===== Routes =====
 @app.get("/")
@@ -94,6 +152,14 @@ async def connect_platform(data: PlatformConnect):
     safe_credentials = dict(data.credentials or {})
     safe_credentials["email"] = user_email
 
+    warning_message = None
+    if platform_name == "discord":
+        token, guild_id = _extract_discord_credentials(safe_credentials)
+        warning_message = _validate_discord_credentials(token, guild_id)
+        if token:
+            masked = (token[:6] + "..." + token[-4:]) if len(token) > 12 else "***"
+            safe_credentials["discord-token"] = masked
+
     if existing:
         existing.connected = True
         existing.credentials = json.dumps(safe_credentials)
@@ -107,7 +173,10 @@ async def connect_platform(data: PlatformConnect):
         db.add(new_platform)
     db.commit()
     db.close()
-    return {"success": True, "message": f"{platform_name} connected successfully!"}
+    response = {"success": True, "message": f"{platform_name} connected successfully!"}
+    if warning_message:
+        response["warning"] = warning_message
+    return response
 
 @app.get("/api/platform/status/{email}")
 async def platform_status(email: str):
