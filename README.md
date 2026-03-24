@@ -47,8 +47,7 @@ Meeting-Agents-Discord-teams-zoom/
 │
 ├── bot/
 │   ├── transcriber.py         # Groq Whisper transcription
-│   ├── audio_capture.py       # Optional local recording helper
-│   └── meeting_joiner.py      # Legacy file (not in current scope)
+│
 │
 ├── db/
 │   └── models.py              # SQLAlchemy models
@@ -149,11 +148,7 @@ Supported platform values:
 - `!remind <minutes> <message>`
 - `!help`
 
-## Notes
-
-- `bot/meeting_joiner.py` remains as a legacy file but is not used by current APIs/UI.
-- If you want strict cleanup, you can remove legacy meeting files in a follow-up commit.
-
 ## License
 
 MIT
+

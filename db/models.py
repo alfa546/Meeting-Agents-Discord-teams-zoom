@@ -27,16 +27,6 @@ class Platform(Base):
     credentials = Column(String)
     connected_at = Column(DateTime, default=datetime.utcnow)
 
-class Meeting(Base):
-    __tablename__ = "meetings"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_email = Column(String, nullable=False)
-    platform = Column(String)
-    link = Column(String)
-    summary = Column(String)
-    transcript = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
 def init_db():
     Base.metadata.create_all(bind=engine)
     print("Database ready!")
