@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 from urllib.parse import urlencode
+import base64
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -80,6 +81,29 @@ def _build_discord_invite_url(client_id: str, guild_id: str | None = None) -> st
     return f"https://discord.com/oauth2/authorize?{urlencode(params)}"
 
 
+def _discord_client_id_from_token(token: str) -> str:
+    value = (token or "").strip()
+    if value.lower().startswith("bot "):
+        value = value[4:]
+    parts = value.split(".")
+    if not parts:
+        return ""
+    first = parts[0]
+    padded = first + "=" * (-len(first) % 4)
+    try:
+        decoded = base64.urlsafe_b64decode(padded.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return ""
+    return decoded if decoded.isdigit() else ""
+
+
+def _get_discord_client_id() -> str:
+    configured = os.getenv("DISCORD_CLIENT_ID", "").strip()
+    if configured:
+        return configured
+    return _discord_client_id_from_token(os.getenv("DISCORD_TOKEN", ""))
+
+
 def _validate_discord_credentials(token: str, guild_id: str) -> str | None:
     if not token:
         raise HTTPException(status_code=400, detail="Discord Bot Token is required.")
@@ -123,11 +147,11 @@ def _validate_discord_credentials(token: str, guild_id: str) -> str | None:
 
 @app.get("/api/discord/invite-url")
 async def discord_invite_url(guild_id: str = ""):
-    client_id = os.getenv("DISCORD_CLIENT_ID", "").strip()
+    client_id = _get_discord_client_id()
     if not client_id:
         raise HTTPException(
             status_code=500,
-            detail="DISCORD_CLIENT_ID is not configured in environment.",
+            detail="DISCORD client ID is not available. Set DISCORD_CLIENT_ID or verify DISCORD_TOKEN.",
         )
     value = (guild_id or "").strip()
     if value and not value.isdigit():
@@ -184,7 +208,7 @@ async def connect_platform(data: PlatformConnect):
     if platform_name == "discord":
         env_bot_token = os.getenv("DISCORD_TOKEN", "").strip()
         env_guild_id = os.getenv("DISCORD_GUILD_ID", "").strip()
-        client_id = os.getenv("DISCORD_CLIENT_ID", "").strip()
+        client_id = _get_discord_client_id()
 
         if not env_bot_token:
             raise HTTPException(
