@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import tempfile
+from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -48,6 +49,7 @@ class PlatformConnect(BaseModel):
 
 
 SUPPORTED_PLATFORMS = {"discord", "gmail", "whatsapp"}
+DISCORD_INVITE_PERMISSIONS = "274877975552"
 
 
 def _extract_discord_credentials(credentials: dict) -> tuple[str, str]:
@@ -64,6 +66,18 @@ def _extract_discord_credentials(credentials: dict) -> tuple[str, str]:
         or ""
     ).strip()
     return token, guild_id
+
+
+def _build_discord_invite_url(client_id: str, guild_id: str | None = None) -> str:
+    params = {
+        "client_id": client_id,
+        "scope": "bot applications.commands",
+        "permissions": DISCORD_INVITE_PERMISSIONS,
+        "disable_guild_select": "false",
+    }
+    if guild_id:
+        params["guild_id"] = guild_id
+    return f"https://discord.com/oauth2/authorize?{urlencode(params)}"
 
 
 def _validate_discord_credentials(token: str, guild_id: str) -> str | None:
@@ -105,6 +119,20 @@ def _validate_discord_credentials(token: str, guild_id: str) -> str | None:
     if guild_response.status_code >= 400:
         raise HTTPException(status_code=400, detail="Discord server validation failed.")
     return None
+
+
+@app.get("/api/discord/invite-url")
+async def discord_invite_url(guild_id: str = ""):
+    client_id = os.getenv("DISCORD_CLIENT_ID", "").strip()
+    if not client_id:
+        raise HTTPException(
+            status_code=500,
+            detail="DISCORD_CLIENT_ID is not configured in environment.",
+        )
+    value = (guild_id or "").strip()
+    if value and not value.isdigit():
+        raise HTTPException(status_code=400, detail="Discord Server ID must be numeric.")
+    return {"url": _build_discord_invite_url(client_id, value or None)}
 
 # ===== Routes =====
 @app.get("/")
@@ -154,11 +182,42 @@ async def connect_platform(data: PlatformConnect):
 
     warning_message = None
     if platform_name == "discord":
-        token, guild_id = _extract_discord_credentials(safe_credentials)
-        warning_message = _validate_discord_credentials(token, guild_id)
-        if token:
-            masked = (token[:6] + "..." + token[-4:]) if len(token) > 12 else "***"
-            safe_credentials["discord-token"] = masked
+        env_bot_token = os.getenv("DISCORD_TOKEN", "").strip()
+        env_guild_id = os.getenv("DISCORD_GUILD_ID", "").strip()
+        client_id = os.getenv("DISCORD_CLIENT_ID", "").strip()
+
+        if not env_bot_token:
+            raise HTTPException(
+                status_code=500,
+                detail="DISCORD_TOKEN is not configured on server.",
+            )
+
+        _, provided_guild_id = _extract_discord_credentials(safe_credentials)
+        guild_id = provided_guild_id or env_guild_id
+        if not guild_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Discord Server ID is required. Enter it in website or set DISCORD_GUILD_ID.",
+            )
+
+        try:
+            warning_message = _validate_discord_credentials(env_bot_token, guild_id)
+        except HTTPException as exc:
+            detail_text = str(exc.detail)
+            if client_id and ("not a member" in detail_text.lower() or "not found" in detail_text.lower()):
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "message": detail_text,
+                        "invite_url": _build_discord_invite_url(client_id, guild_id),
+                    },
+                )
+            raise
+
+        safe_credentials.pop("discord-token", None)
+        safe_credentials.pop("token", None)
+        safe_credentials.pop("bot_token", None)
+        safe_credentials["discord-server"] = guild_id
 
     if existing:
         existing.connected = True

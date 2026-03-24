@@ -673,9 +673,8 @@ Removed from frontend:
       {
         key: "discord",
         label: "Discord",
-        description: "Bot token and server routing for alerts and command workflows.",
+        description: "Enter Discord Server ID and connect. Use Add Bot if the bot is not in your server yet.",
         fields: [
-          { id: "discord-token", label: "Bot Token", type: "password", placeholder: "MT..." },
           { id: "discord-server", label: "Server ID", type: "text", placeholder: "123456789" }
         ]
       },
@@ -730,9 +729,34 @@ Removed from frontend:
         data = {};
       }
       if (!res.ok) {
-        throw new Error(data.detail || data.message || "Request failed");
+        const detail = data?.detail;
+        if (detail && typeof detail === "object") {
+          const message = detail.message || "Request failed";
+          const err = new Error(message);
+          if (detail.invite_url) {
+            err.inviteUrl = detail.invite_url;
+          }
+          throw err;
+        }
+        throw new Error(detail || data.message || "Request failed");
       }
       return data;
+    }
+
+    async function openDiscordInvite() {
+      try {
+        const guildId = document.getElementById("discord-discord-server")?.value?.trim() || "";
+        const query = guildId ? `?guild_id=${encodeURIComponent(guildId)}` : "";
+        const data = await callApi(`/api/discord/invite-url${query}`);
+        if (!data?.url) {
+          showToast("Could not create Discord invite URL.", true);
+          return;
+        }
+        window.open(data.url, "_blank", "noopener,noreferrer");
+        showToast("Discord invite opened. Add bot, then click Connect.");
+      } catch (err) {
+        showToast(err.message || "Failed to open invite.", true);
+      }
     }
 
     function showView(view) {
@@ -881,6 +905,7 @@ Removed from frontend:
           ${fields}
           <div style="display:flex; gap:.42rem; flex-wrap:wrap; margin-top:.65rem;">
             <button class="btn btn-primary" onclick="connectPlatform('${item.key}')">Connect</button>
+            ${item.key === "discord" ? '<button class="btn btn-ghost" onclick="openDiscordInvite()">Add Bot</button>' : ''}
             <button class="btn btn-danger" onclick="disconnectPlatform('${item.key}')">Disconnect</button>
           </div>
         </article>
@@ -908,7 +933,7 @@ Removed from frontend:
       }
       try {
         const credentials = collectCredentials(platformKey);
-        await callApi("/api/platform/connect", {
+        const data = await callApi("/api/platform/connect", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ platform: platformKey, credentials })
@@ -916,8 +941,15 @@ Removed from frontend:
         await loadPlatformStatus();
         updateMetrics();
         renderIntegrations();
-        showToast(`${platformKey} connected.`);
+        if (data?.warning) {
+          showToast(`${platformKey} connected with warning: ${data.warning}`);
+        } else {
+          showToast(`${platformKey} connected.`);
+        }
       } catch (err) {
+        if (err.inviteUrl) {
+          window.open(err.inviteUrl, "_blank", "noopener,noreferrer");
+        }
         showToast(err.message, true);
       }
     }
