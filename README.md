@@ -15,6 +15,7 @@ An open-source AI-powered meeting agent that automatically joins meetings, trans
 - 🎙️ **Live Transcription** — Powered by Groq Whisper (free)
 - 🧠 **AI Summary** — Key points, action items, decisions via LLaMA 3.3
 - 💬 **Discord Bot** — Always online, sends summaries via DM
+- 👋 **Auto Welcome DM** — New Discord members get automatic DM on join
 - 📧 **Gmail Integration** — Auto-detects meeting links from emails
 - 🌐 **Web Dashboard** — Beautiful dark-theme interface
 - 📊 **Meeting History** — All past meetings and summaries saved
@@ -187,6 +188,10 @@ GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
 # Discord Bot (FREE) — https://discord.com/developers
 DISCORD_TOKEN=MTxxxxxxxxxxxxxxxxxx
 DISCORD_GUILD_ID=123456789012345678
+
+# Optional: Auto DM to new Discord members
+DISCORD_WELCOME_DM_ENABLED=true
+DISCORD_WELCOME_DM_TEMPLATE=Namaste {member_name}! {server_name} me welcome. !help bhej kar commands dekh lo.
 
 # Google OAuth (FREE) — https://console.cloud.google.com
 GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com

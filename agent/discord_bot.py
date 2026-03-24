@@ -13,6 +13,17 @@ from scheduler import ReminderScheduler
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+WELCOME_DM_ENABLED = os.getenv("DISCORD_WELCOME_DM_ENABLED", "true").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+WELCOME_DM_TEMPLATE = os.getenv(
+    "DISCORD_WELCOME_DM_TEMPLATE",
+    "Namaste {member_name}! {server_name} me welcome.\\n"
+    "Main Meeting Agent bot hoon. `!help` bhej ke commands dekh sakte ho.",
+)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -63,6 +74,22 @@ async def _send_summary_dm(user_ids, summary_text: str):
             await user.send(f"📩 **Meeting Summary:**\n\n{summary_text}")
         except Exception as e:
             print(f"DM failed for {user_id}: {e}")
+
+
+def _build_welcome_dm(member: discord.Member) -> str:
+    default_msg = (
+        f"Namaste {member.display_name}! {member.guild.name} me welcome.\\n"
+        "Main Meeting Agent bot hoon. `!help` bhej ke commands dekh sakte ho."
+    )
+
+    try:
+        return WELCOME_DM_TEMPLATE.format(
+            member_name=member.display_name,
+            server_name=member.guild.name,
+            member_mention=member.mention,
+        )
+    except Exception:
+        return default_msg
 
 
 async def _spawn_ffmpeg_recording(output_dir: str = "recordings"):
@@ -206,6 +233,20 @@ async def _start_auto_session(guild: discord.Guild, voice_channel: discord.Voice
 async def on_ready():
     print(f"Bot online: {bot.user}")
     init_db()
+
+
+@bot.event
+async def on_member_join(member: discord.Member):
+    if member.bot or not WELCOME_DM_ENABLED:
+        return
+
+    try:
+        await member.send(_build_welcome_dm(member))
+        print(f"Welcome DM sent to {member.id} in guild {member.guild.id}")
+    except discord.Forbidden:
+        print(f"Cannot DM member {member.id}; DMs are disabled.")
+    except Exception as e:
+        print(f"Welcome DM failed for {member.id}: {e}")
 
 
 @bot.event
@@ -453,6 +494,7 @@ async def help_command(ctx):
 ✓ AI Transcription (Whisper)
 ✓ Automatic Voice Auto-Join
 ✓ Automatic End-of-Call Summary
+✓ Auto DM to New Server Members
 ✓ DM Summary to Participants
 ✓ Meeting History
 ✓ Multi-platform support
