@@ -1,154 +1,81 @@
-# LIMO_AGENT (Discord + Gmail + WhatsApp)
+# LIMO Agent - AI Chatbot
 
-This project has been cleaned from meeting platform features and now focuses on three channels only:
+LIMO Agent is a web-based AI chatbot similar to GPT.
 
-- Discord
-- Gmail
-- WhatsApp
+This project is now focused only on chatbot functionality.
+All old integrations such as Discord, Gmail, WhatsApp, transcription, and platform connectors have been removed from scope.
 
-It includes:
-- FastAPI backend
-- Dashboard frontend
-- Discord bot utilities
-- Gmail helper utilities
-- WhatsApp helper utilities
-- AI text summarization endpoint
+## What LIMO Agent Does
 
-## Scope Update
+- Provides a clean web chat interface
+- Supports multi-session chat by session ID
+- Uses Groq API when `GROQ_API_KEY` is configured
+- Automatically falls back to local replies if API key is missing
+- Exposes simple API endpoints for chat, chat history, and clear history
 
-Removed from this project scope:
-- Google Meet, Zoom, Teams join automation
-- Calendar meeting sync flows
-- Meeting room UI
-- Meeting analytics/history endpoints
-- OAuth routes dedicated to meeting workflows
+## Tech Stack
 
-Current scope:
-- User auth (local)
-- Channel integration state tracking (Discord, Gmail, WhatsApp)
-- Summarize long text via Groq
-- Optional audio transcription endpoint
+- FastAPI
+- Jinja2 templates (web UI)
+- Groq Python SDK (LLM provider)
 
 ## Project Structure
 
 ```text
-LIMO_AGENT/
-├── main.py                    # FastAPI backend (channel-focused)
-├── scheduler.py               # In-memory reminder scheduler
-├── requirements.txt           # Clean dependency set
-├── credentials.json           # Gmail OAuth desktop credentials (optional)
-├── meetingagent.db            # SQLite database
-│
-├── agent/
-│   ├── discord_bot.py         # Discord channel assistant bot
-│   ├── email_handler.py       # Gmail important-email helper
-│   ├── whatsapp_handler.py    # WhatsApp API helper
-│   └── summarizer.py          # Groq LLM summarizer
-│
-├── bot/
-│   ├── transcriber.py         # Groq Whisper transcription
-│
-│
-├── db/
-│   └── models.py              # SQLAlchemy models
-│
-└── web/
-    └── templates/
-        └── index.html         # Frontend dashboard
+.
+├── main.py
+├── requirements.txt
+├── web/
+│   └── templates/
+│       └── index.html
+└── README.md
 ```
 
 ## Setup
 
-### 1. Clone and enter directory
-
-```bash
-git clone https://github.com/alfa546/LIMO_AGENT.git
-cd LIMO_AGENT
-```
-
-### 2. Create and activate virtualenv
+1. Create virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install dependencies
+2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
-
-Create `.env` in the project root.
+3. Create `.env` file:
 
 ```env
-# Core AI
-GROQ_API_KEY=your_groq_key
-
-# Discord
-DISCORD_TOKEN=your_discord_bot_token
-DISCORD_WELCOME_DM_ENABLED=true
-DISCORD_WELCOME_DM_TEMPLATE=Namaste {member_name}. {server_name} me welcome.
-
-# WhatsApp gateway
-WHATSAPP_API_URL=https://your-whatsapp-provider.example/send
-WHATSAPP_API_TOKEN=your_whatsapp_token
+GROQ_API_KEY=your_groq_api_key
 ```
 
-For Gmail helper:
-- Keep `credentials.json` in root (Google desktop OAuth credentials).
-- On first run, `token.json` is generated after consent.
-
 ## Run
-
-### Start backend
 
 ```bash
 uvicorn main:app --reload --port 8000
 ```
 
-Open:
-- http://localhost:8000
-
-### Start Discord bot (optional)
-
-```bash
-python -m agent.discord_bot
-```
+Open: `http://localhost:8000`
 
 ## API Endpoints
 
-### Auth
-- `POST /api/register`
-- `POST /api/login`
-
-### Channel integrations
-- `POST /api/platform/connect`
-- `POST /api/platform/disconnect`
-- `GET /api/platform/status/{email}`
-
-Supported platform values:
-- `discord`
-- `gmail`
-- `whatsapp`
-
-### AI utilities
-- `POST /api/summarize`
-- `POST /api/transcribe`
-
-### Health
 - `GET /api/health`
+- `POST /api/chat`
+- `POST /api/session/history`
+- `POST /api/session/clear`
 
-## Discord Bot Commands
+## Example Request
 
-- `!ping`
-- `!summary <text>`
-- `!remind <minutes> <message>`
-- `!help`
+```bash
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"demo-user","message":"Hello LIMO"}'
+```
 
-## License
+## Notes
 
-MIT
-
+- Current session store is in-memory. Restarting server clears chat history.
+- For production, replace in-memory storage with a database and add authentication.

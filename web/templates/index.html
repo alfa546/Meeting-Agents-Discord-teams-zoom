@@ -3,1019 +3,303 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LIMO_AGENT - Discord, Gmail, WhatsApp</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sora:wght@500;700;800&display=swap" rel="stylesheet" />
-
+  <title>LIMO Agent | AI Chatbot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f5f7f2;
-      --ink: #151f19;
-      --muted: #46554d;
-      --line: #d5dfd5;
-      --card: #ffffffd8;
-      --brand: #0f7a6a;
-      --brand-2: #1d4ed8;
-      --warm: #f97316;
-      --ok: #0b8f5e;
-      --danger: #b91c1c;
+      --bg: #f4efe4;
+      --ink: #1c1712;
+      --muted: #5f5547;
+      --line: #d8ceb9;
+      --panel: #fffdf8;
+      --accent: #0d8a73;
+      --accent2: #ea6b20;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: "Outfit", sans-serif;
+      font-family: "Plus Jakarta Sans", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 8% 14%, #c4f0da 0%, transparent 40%),
-        radial-gradient(circle at 91% 18%, #c7ddff 0%, transparent 35%),
-        linear-gradient(150deg, #f5f7f2 0%, #ebf1e8 54%, #e6eef0 100%);
+        radial-gradient(circle at 8% 10%, #ffe2b6, transparent 38%),
+        radial-gradient(circle at 90% 12%, #bcecdc, transparent 34%),
+        linear-gradient(160deg, #f4efe4 0%, #f8f3e8 50%, #efe6d8 100%);
       min-height: 100vh;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(21, 31, 25, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(21, 31, 25, 0.03) 1px, transparent 1px);
-      background-size: 22px 22px;
-    }
-
-    .hidden { display: none !important; }
-
-    .app { position: relative; z-index: 1; }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--line);
-      background: #f5f7f2d9;
-    }
-
-    .topbar-wrap {
+    .wrap {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 0.8rem 1rem;
+      padding: 1rem;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      padding: 1rem;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.07);
+      animation: rise .45s ease;
+    }
+
+    .pill {
+      display: inline-block;
+      border: 1px solid #bcecdc;
+      background: #ebfaf5;
+      color: #1f7a5e;
+      border-radius: 999px;
+      padding: .2rem .7rem;
+      font-size: .73rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    h1 {
+      margin: .55rem 0 .2rem;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(1.7rem, 4vw, 2.7rem);
+      letter-spacing: -.03em;
+      line-height: 1.05;
+    }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      max-width: 68ch;
+      line-height: 1.5;
+    }
+
+    .chat-shell {
+      margin-top: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      animation: rise .5s ease;
+    }
+
+    .toolbar {
       display: flex;
+      gap: .6rem;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 0.8rem;
+      padding: .8rem;
+      border-bottom: 1px solid var(--line);
+      background: #fff9ef;
     }
 
-    .logo {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.65rem;
-      text-decoration: none;
-      color: inherit;
-    }
-
-    .logo-badge {
-      width: 36px;
-      height: 36px;
-      border-radius: 11px;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      font-weight: 800;
-      background: linear-gradient(130deg, var(--brand), var(--brand-2));
-      box-shadow: 0 12px 26px #1d4ed833;
-    }
-
-    .logo-title {
-      margin: 0;
-      font-family: "Sora", sans-serif;
-      letter-spacing: -0.03em;
-      font-size: 1.08rem;
-      line-height: 1;
-    }
-
-    .logo-sub {
-      margin: 0.17rem 0 0;
-      font-size: 0.74rem;
-      color: var(--muted);
+    .session {
+      font-size: .82rem;
+      color: #6b5f4f;
+      font-weight: 700;
     }
 
     .btn {
       border: 1px solid transparent;
-      border-radius: 11px;
-      padding: 0.54rem 0.95rem;
+      border-radius: 10px;
+      padding: .48rem .72rem;
       font-family: inherit;
-      font-size: 0.89rem;
-      font-weight: 700;
+      font-size: .84rem;
+      font-weight: 800;
       cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
-    .btn:hover { transform: translateY(-1px); }
 
     .btn-primary {
       color: #fff;
-      background: linear-gradient(120deg, var(--brand), var(--brand-2));
-      box-shadow: 0 12px 24px #1d4ed833;
+      background: linear-gradient(120deg, var(--accent), #0ea5a0);
     }
 
-    .btn-ghost {
-      background: #ffffffbd;
-      color: var(--ink);
-      border-color: var(--line);
+    .btn-warm {
+      color: #fff;
+      background: linear-gradient(120deg, var(--accent2), #f59d3d);
     }
 
-    .btn-danger {
-      background: #fef2f2;
-      color: var(--danger);
-      border-color: #fecaca;
-    }
-
-    .landing {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 1.5rem 1rem 2.4rem;
-    }
-
-    .panel {
-      border: 1px solid var(--line);
-      background: var(--card);
-      border-radius: 20px;
-      box-shadow: 0 16px 35px #15211a12;
-    }
-
-    .hero {
-      padding: 1.4rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      width: 200px;
-      height: 200px;
-      border-radius: 999px;
-      right: -60px;
-      top: -70px;
-      background: radial-gradient(circle, #86efac80 0%, transparent 68%);
-    }
-
-    .kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      font-size: 0.75rem;
-      border: 1px solid #bbf7d0;
-      border-radius: 999px;
-      background: #ecfdf5;
-      color: #0f5132;
-      padding: 0.33rem 0.58rem;
-      font-weight: 700;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #22c55e;
-      animation: pulse 1.5s ease infinite;
-    }
-
-    h1 {
-      margin: 0.85rem 0 0;
-      font-family: "Sora", sans-serif;
-      font-size: clamp(1.9rem, 4vw, 3rem);
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-    }
-
-    .hero-copy {
-      margin-top: 0.8rem;
-      color: var(--muted);
-      max-width: 62ch;
-      line-height: 1.55;
-    }
-
-    .pill-row {
-      margin-top: 0.95rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-    }
-
-    .pill {
-      border: 1px solid #d4dfd5;
-      border-radius: 999px;
-      padding: 0.36rem 0.58rem;
-      font-size: 0.77rem;
-      font-weight: 700;
-      background: #fff;
-      color: #2b3c33;
-    }
-
-    .auth {
-      max-width: 520px;
-      margin: 1.8rem auto;
-      padding: 0 1rem;
-    }
-
-    .auth-card { padding: 1.1rem; }
-
-    .auth-title {
-      margin: 0;
-      font-family: "Sora", sans-serif;
-      font-size: 1.7rem;
-      letter-spacing: -0.03em;
-    }
-
-    .auth-sub {
-      margin: 0.45rem 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .field { margin-top: 0.78rem; }
-
-    .label {
-      display: block;
-      margin-bottom: 0.28rem;
-      font-size: 0.75rem;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      font-weight: 700;
-      color: #4f5d56;
-    }
-
-    .input, .textarea {
-      width: 100%;
-      border: 1px solid #d4ddd4;
-      background: #ffffffde;
-      border-radius: 11px;
-      padding: 0.62rem 0.72rem;
-      font-family: inherit;
-      font-size: 0.91rem;
-      color: var(--ink);
-      outline: none;
-    }
-
-    .textarea { min-height: 170px; resize: vertical; }
-
-    .input:focus, .textarea:focus {
-      border-color: #58addd;
-      box-shadow: 0 0 0 3px #58addd22;
-    }
-
-    .switch-text {
-      margin-top: 0.9rem;
-      text-align: center;
-      color: #4f5d56;
-      font-size: 0.9rem;
-    }
-
-    .switch-text button {
-      border: none;
-      background: none;
-      color: #1d4ed8;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .workspace {
-      max-width: 1100px;
-      margin: 1rem auto 2rem;
-      padding: 0 1rem;
+    .messages {
+      height: 58vh;
+      min-height: 360px;
+      overflow: auto;
+      padding: .9rem;
       display: grid;
-      grid-template-columns: 250px 1fr;
-      gap: 0.9rem;
+      gap: .55rem;
+      background: linear-gradient(180deg, #fffcf6 0%, #fff9ef 100%);
     }
 
-    .sidebar {
-      border: 1px solid var(--line);
-      background: var(--card);
-      border-radius: 18px;
-      padding: 0.75rem;
-      align-self: start;
-      position: sticky;
-      top: 74px;
-    }
-
-    .side-btn {
-      width: 100%;
-      text-align: left;
-      border: 1px solid transparent;
-      background: transparent;
-      border-radius: 10px;
-      padding: 0.56rem;
-      font-family: inherit;
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #213229;
-      cursor: pointer;
-    }
-
-    .side-btn:hover { background: #eef4ec; }
-
-    .side-btn.active {
-      background: #edf4ff;
-      border-color: #c9daf8;
-      color: #17377d;
-    }
-
-    .content-panel {
-      border: 1px solid var(--line);
-      background: var(--card);
-      border-radius: 18px;
-      padding: 0.95rem;
-      box-shadow: 0 16px 35px #15211a10;
-    }
-
-    .title {
-      margin: 0;
-      font-family: "Sora", sans-serif;
-      letter-spacing: -0.03em;
-      font-size: 1.45rem;
-      line-height: 1.12;
-    }
-
-    .subtitle {
-      margin: 0.3rem 0 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-
-    .metric-grid {
-      margin-top: 0.8rem;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.6rem;
-    }
-
-    .metric {
-      border: 1px solid #d6dfd7;
-      border-radius: 12px;
-      background: #ffffffcf;
-      padding: 0.67rem;
-    }
-
-    .metric-label {
-      margin: 0;
-      font-size: 0.75rem;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: #5c6b64;
-      font-weight: 700;
-    }
-
-    .metric-value {
-      margin: 0.3rem 0 0;
-      font-size: 1.45rem;
-      font-weight: 800;
-    }
-
-    .integrations-grid {
-      margin-top: 0.8rem;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.65rem;
-    }
-
-    .integration-card {
-      border: 1px solid #d8e2d7;
-      border-radius: 13px;
-      background: #ffffffd6;
-      padding: 0.72rem;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .integration-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 22px #0f172a16;
-    }
-
-    .integration-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.42rem;
-    }
-
-    .integration-name {
-      margin: 0;
-      font-size: 0.93rem;
-      font-weight: 800;
-    }
-
-    .integration-copy {
-      margin: 0.2rem 0 0;
-      color: #4e5d55;
-      font-size: 0.81rem;
-      line-height: 1.43;
-    }
-
-    .badge {
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 0.2rem 0.5rem;
-      border: 1px solid #dce4dc;
-      background: #fff;
-      color: #33463d;
-    }
-
-    .badge-on {
-      border-color: #bbf7d0;
-      background: #ecfdf5;
-      color: #0f5132;
-    }
-
-    .feed {
-      margin-top: 0.7rem;
-      border: 1px solid #dbe4dc;
-      border-radius: 12px;
-      background: #fdfefd;
-      min-height: 180px;
-      white-space: pre-wrap;
-      padding: 0.7rem;
-      color: #2f3f36;
+    .msg {
+      max-width: 80%;
+      padding: .62rem .72rem;
+      border-radius: 14px;
+      font-size: .92rem;
       line-height: 1.5;
-      font-size: 0.84rem;
+      white-space: pre-wrap;
+      animation: pop .22s ease;
     }
 
-    .toast {
-      position: fixed;
-      right: 1rem;
-      bottom: 1rem;
-      z-index: 90;
-      display: none;
-      min-width: 220px;
-      max-width: 340px;
-      border-radius: 11px;
-      padding: 0.7rem 0.85rem;
-      font-size: 0.84rem;
-      font-weight: 700;
-      border: 1px solid #bbf7d0;
-      background: #ecfdf5;
-      color: #0f5132;
-      box-shadow: 0 14px 28px #0f172a22;
+    .msg-user {
+      justify-self: end;
+      background: #e6fbf4;
+      border: 1px solid #bcecdc;
     }
 
-    .toast.error {
-      border-color: #fecaca;
-      background: #fef2f2;
-      color: #7f1d1d;
+    .msg-ai {
+      justify-self: start;
+      background: #fff;
+      border: 1px solid #e1d6c6;
     }
 
-    @media (max-width: 900px) {
-      .workspace { grid-template-columns: 1fr; }
-      .sidebar { position: static; }
-      .integrations-grid, .metric-grid { grid-template-columns: 1fr; }
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: .75rem;
+      background: #fff9ef;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .6rem;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.45; }
+    textarea {
+      width: 100%;
+      min-height: 70px;
+      max-height: 180px;
+      resize: vertical;
+      border: 1px solid #d9cebb;
+      border-radius: 12px;
+      padding: .62rem .72rem;
+      font-family: inherit;
+      font-size: .92rem;
+      background: #fffef9;
+    }
+
+    .note {
+      margin-top: .55rem;
+      font-size: .78rem;
+      color: #706451;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 700px) {
+      .messages { height: 62vh; }
+      .msg { max-width: 92%; }
+      .composer { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="topbar-wrap">
-        <a class="logo" href="#" onclick="goLanding()">
-          <div class="logo-badge">LA</div>
-          <div>
-            <p class="logo-title">LIMO_AGENT</p>
-            <p class="logo-sub">Discord + Gmail + WhatsApp Hub</p>
-          </div>
-        </a>
-
-        <div id="publicActions" style="display:flex; gap:.45rem;">
-          <button class="btn btn-ghost" onclick="openAuth('login')">Sign In</button>
-          <button class="btn btn-primary" onclick="openAuth('register')">Get Started</button>
-        </div>
-
-        <div id="privateActions" class="hidden" style="display:flex; gap:.45rem; align-items:center;">
-          <button class="btn btn-ghost" onclick="setDashboardTab('overview')">Dashboard</button>
-          <button class="btn btn-ghost" onclick="signOut()">Sign Out</button>
-        </div>
-      </div>
-    </header>
-
-    <section id="view-landing" class="landing">
-      <div class="panel hero">
-        <div class="kicker"><span class="dot"></span>Channel-first workflow</div>
-        <h1>One control desk for Discord alerts, Gmail workflows, and WhatsApp updates.</h1>
-        <p class="hero-copy">Meeting-only modules are removed from this UI. Use this dashboard to connect your three channels and generate AI summaries for notes, emails, and chat updates.</p>
-        <div class="pill-row">
-          <span class="pill">Discord</span>
-          <span class="pill">Gmail</span>
-          <span class="pill">WhatsApp</span>
-          <span class="pill">AI Summaries</span>
-        </div>
-      </div>
+  <main class="wrap">
+    <section class="hero">
+      <span class="pill">LIMO Agent</span>
+      <h1>AI Chatbot Like GPT</h1>
+      <p class="sub">Yeh app sirf chatbot ke liye hai. Discord, Gmail, aur baqi integrations remove kar di gayi hain. Apni website par embed/open karke users chat kar sakte hain.</p>
+      <p class="note">Tip: GROQ_API_KEY set ho to advanced model response milega. Key na ho to local fallback reply chalta rahega.</p>
     </section>
 
-    <section id="view-login" class="auth hidden">
-      <div class="panel auth-card">
-        <h2 class="auth-title">Sign in</h2>
-        <p class="auth-sub">Open your channel workspace.</p>
-
-        <div class="field">
-          <label class="label" for="login-email">Email</label>
-          <input id="login-email" class="input" type="email" placeholder="you@company.com" />
+    <section class="chat-shell">
+      <div class="toolbar">
+        <div class="session">Session: <span id="sessionId"></span></div>
+        <div>
+          <button id="refreshBtn" class="btn btn-warm">Reload History</button>
+          <button id="clearBtn" class="btn btn-warm">Clear Chat</button>
         </div>
-        <div class="field">
-          <label class="label" for="login-password">Password</label>
-          <input id="login-password" class="input" type="password" placeholder="At least 6 characters" />
-        </div>
+      </div>
 
-        <button class="btn btn-primary" style="margin-top:1rem; width:100%;" onclick="submitLogin()">Login</button>
-        <p class="switch-text">New here? <button onclick="openAuth('register')">Create account</button></p>
+      <div id="messages" class="messages"></div>
+
+      <div class="composer">
+        <textarea id="prompt" placeholder="Type your message..."></textarea>
+        <button id="sendBtn" class="btn btn-primary">Send</button>
       </div>
     </section>
-
-    <section id="view-register" class="auth hidden">
-      <div class="panel auth-card">
-        <h2 class="auth-title">Create account</h2>
-        <p class="auth-sub">Start with Discord, Gmail and WhatsApp.</p>
-
-        <div class="field">
-          <label class="label" for="reg-name">Name</label>
-          <input id="reg-name" class="input" type="text" placeholder="Areeb Khan" />
-        </div>
-        <div class="field">
-          <label class="label" for="reg-email">Email</label>
-          <input id="reg-email" class="input" type="email" placeholder="you@company.com" />
-        </div>
-        <div class="field">
-          <label class="label" for="reg-password">Password</label>
-          <input id="reg-password" class="input" type="password" placeholder="At least 6 characters" />
-        </div>
-
-        <button class="btn btn-primary" style="margin-top:1rem; width:100%;" onclick="submitRegister()">Register</button>
-        <p class="switch-text">Already have an account? <button onclick="openAuth('login')">Login</button></p>
-      </div>
-    </section>
-
-    <section id="view-dashboard" class="workspace hidden">
-      <aside class="sidebar">
-        <button id="side-overview" class="side-btn" onclick="setDashboardTab('overview')">Overview</button>
-        <button id="side-integrations" class="side-btn" onclick="setDashboardTab('integrations')">Integrations</button>
-        <button id="side-summarizer" class="side-btn" onclick="setDashboardTab('summarizer')">Summarizer</button>
-        <button id="side-account" class="side-btn" onclick="setDashboardTab('account')">Account</button>
-      </aside>
-
-      <main>
-        <section id="tab-overview" class="content-panel">
-          <h3 class="title">Overview</h3>
-          <p class="subtitle" id="greeting">Welcome to your channel workspace.</p>
-
-          <div class="metric-grid">
-            <article class="metric">
-              <p class="metric-label">Connected Apps</p>
-              <p id="metric-connected" class="metric-value">0</p>
-            </article>
-            <article class="metric">
-              <p class="metric-label">Supported Channels</p>
-              <p class="metric-value">3</p>
-            </article>
-            <article class="metric">
-              <p class="metric-label">Scope</p>
-              <p class="metric-value" style="font-size:1.05rem;">No Meeting Features</p>
-            </article>
-          </div>
-
-          <div class="feed" style="margin-top:0.85rem;">
-This dashboard now runs in channel-only mode.
-
-Included:
-- Discord integration
-- Gmail integration
-- WhatsApp integration
-- Text summarization utility
-
-Removed from frontend:
-- Meeting join flows
-- Calendar sync
-- Meeting room and analytics
-- Meeting history panels
-          </div>
-        </section>
-
-        <section id="tab-integrations" class="content-panel hidden">
-          <h3 class="title">Integrations</h3>
-          <p class="subtitle">Connect and disconnect your three supported channels.</p>
-          <div id="integrations-grid" class="integrations-grid"></div>
-        </section>
-
-        <section id="tab-summarizer" class="content-panel hidden">
-          <h3 class="title">Summarizer</h3>
-          <p class="subtitle">Paste any long note/email/chat and generate a concise summary.</p>
-
-          <div class="field">
-            <label class="label" for="summary-language">Language</label>
-            <select id="summary-language" class="input">
-              <option value="auto">Auto</option>
-              <option value="english">English</option>
-              <option value="urdu">Roman Urdu</option>
-              <option value="hindi">Hindi</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label class="label" for="summary-input">Input Text</label>
-            <textarea id="summary-input" class="textarea" placeholder="Paste text here..."></textarea>
-          </div>
-
-          <div style="display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.7rem;">
-            <button class="btn btn-primary" onclick="generateSummary()">Generate Summary</button>
-            <button class="btn btn-ghost" onclick="clearSummary()">Clear</button>
-          </div>
-
-          <div id="summary-output" class="feed">Summary output will appear here.</div>
-        </section>
-
-        <section id="tab-account" class="content-panel hidden">
-          <h3 class="title">Account</h3>
-          <p class="subtitle">Profile and session information.</p>
-
-          <div class="metric-grid" style="grid-template-columns:1fr 1fr;">
-            <article class="metric">
-              <p class="metric-label">Name</p>
-              <p id="account-name" class="metric-value" style="font-size:1.15rem;">-</p>
-            </article>
-            <article class="metric">
-              <p class="metric-label">Email</p>
-              <p id="account-email" class="metric-value" style="font-size:1.02rem; word-break:break-word;">-</p>
-            </article>
-          </div>
-
-          <div style="display:flex; gap:.45rem; margin-top:.8rem; flex-wrap:wrap;">
-            <button class="btn btn-ghost" onclick="setDashboardTab('integrations')">Manage Integrations</button>
-            <button class="btn btn-danger" onclick="signOut()">Sign Out</button>
-          </div>
-        </section>
-      </main>
-    </section>
-
-    <section id="toast" class="toast"></section>
-  </div>
+  </main>
 
   <script>
-    const integrations = [
-      {
-        key: "discord",
-        label: "Discord",
-        description: "Enter Discord Server ID and connect. Use Add Bot if the bot is not in your server yet.",
-        fields: [
-          { id: "discord-server", label: "Server ID", type: "text", placeholder: "123456789" }
-        ]
-      },
-      {
-        key: "gmail",
-        label: "Gmail",
-        description: "Use Gmail app password or OAuth token metadata for mail automation.",
-        fields: [
-          { id: "gmail-address", label: "Gmail Address", type: "email", placeholder: "you@gmail.com" },
-          { id: "gmail-app-pass", label: "App Password", type: "password", placeholder: "App password" }
-        ]
-      },
-      {
-        key: "whatsapp",
-        label: "WhatsApp",
-        description: "Save session key or webhook info for WhatsApp message delivery.",
-        fields: [
-          { id: "wa-session", label: "Session Key", type: "text", placeholder: "session-key" },
-          { id: "wa-webhook", label: "Webhook URL", type: "text", placeholder: "https://..." }
-        ]
-      }
-    ];
+    const messagesEl = document.getElementById('messages');
+    const promptEl = document.getElementById('prompt');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const sessionIdEl = document.getElementById('sessionId');
 
-    const state = {
-      user: null,
-      view: "landing",
-      tab: "overview",
-      platformStatus: {}
-    };
+    let sessionId = localStorage.getItem('limo_session_id');
+    if (!sessionId) {
+      sessionId = 'sess_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('limo_session_id', sessionId);
+    }
+    sessionIdEl.textContent = sessionId;
 
-    function showToast(message, isError = false) {
-      const t = document.getElementById("toast");
-      t.textContent = message;
-      t.classList.toggle("error", isError);
-      t.style.display = "block";
-      clearTimeout(showToast.timer);
-      showToast.timer = setTimeout(() => {
-        t.style.display = "none";
-      }, 3000);
+    function renderMessage(role, content) {
+      const item = document.createElement('div');
+      item.className = `msg ${role === 'user' ? 'msg-user' : 'msg-ai'}`;
+      item.textContent = content;
+      messagesEl.appendChild(item);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function isValidEmail(value) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "");
-    }
-
-    async function callApi(url, options = {}) {
-      const res = await fetch(url, options);
-      let data = {};
-      try {
-        data = await res.json();
-      } catch (err) {
-        data = {};
-      }
-      if (!res.ok) {
-        const detail = data?.detail;
-        if (detail && typeof detail === "object") {
-          const message = detail.message || "Request failed";
-          const err = new Error(message);
-          if (detail.invite_url) {
-            err.inviteUrl = detail.invite_url;
-          }
-          throw err;
-        }
-        throw new Error(detail || data.message || "Request failed");
-      }
+    async function api(path, payload) {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Request failed');
       return data;
     }
 
-    async function openDiscordInvite() {
-      try {
-        const guildId = document.getElementById("discord-discord-server")?.value?.trim() || "";
-        const query = guildId ? `?guild_id=${encodeURIComponent(guildId)}` : "";
-        const data = await callApi(`/api/discord/invite-url${query}`);
-        if (!data?.url) {
-          showToast("Could not create Discord invite URL.", true);
-          return;
-        }
-        window.open(data.url, "_blank", "noopener,noreferrer");
-        showToast("Discord invite opened. Add bot, then click Connect.");
-      } catch (err) {
-        showToast(err.message || "Failed to open invite.", true);
-      }
-    }
-
-    function showView(view) {
-      state.view = view;
-      document.getElementById("view-landing").classList.toggle("hidden", view !== "landing");
-      document.getElementById("view-login").classList.toggle("hidden", view !== "login");
-      document.getElementById("view-register").classList.toggle("hidden", view !== "register");
-      document.getElementById("view-dashboard").classList.toggle("hidden", view !== "dashboard");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function goLanding() {
-      if (state.user) {
-        showView("dashboard");
-      } else {
-        showView("landing");
-      }
-    }
-
-    function openAuth(mode) {
-      showView(mode === "register" ? "register" : "login");
-    }
-
-    function afterAuth() {
-      document.getElementById("publicActions").classList.add("hidden");
-      document.getElementById("privateActions").classList.remove("hidden");
-      document.getElementById("account-name").textContent = state.user?.name || "-";
-      document.getElementById("account-email").textContent = state.user?.email || "-";
-      document.getElementById("greeting").textContent = `Hi ${state.user?.name || "there"}, your workspace is ready.`;
-      showView("dashboard");
-      setDashboardTab("overview");
-      refreshDashboard();
-    }
-
-    async function submitLogin() {
-      const email = document.getElementById("login-email").value.trim().toLowerCase();
-      const password = document.getElementById("login-password").value;
-
-      if (!isValidEmail(email)) {
-        showToast("Enter a valid email.", true);
+    async function loadHistory() {
+      messagesEl.innerHTML = '';
+      const data = await api('/api/session/history', { session_id: sessionId });
+      if (!data.history || !data.history.length) {
+        renderMessage('assistant', 'Assalam o Alaikum. Main LIMO Agent hoon. Aap kaise help chahte hain?');
         return;
       }
-      if (!password || password.length < 6) {
-        showToast("Password must be at least 6 characters.", true);
-        return;
-      }
+      data.history.forEach((m) => renderMessage(m.role, m.content));
+    }
+
+    async function sendMessage() {
+      const text = promptEl.value.trim();
+      if (!text) return;
+      promptEl.value = '';
+      renderMessage('user', text);
+      renderMessage('assistant', 'Thinking...');
 
       try {
-        const data = await callApi("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-        state.user = data.user;
-        afterAuth();
-        showToast("Logged in successfully.");
+        const data = await api('/api/chat', { session_id: sessionId, message: text });
+        messagesEl.lastChild.textContent = data.answer || 'No response';
       } catch (err) {
-        showToast(err.message, true);
+        messagesEl.lastChild.textContent = 'Error: ' + err.message;
       }
     }
 
-    async function submitRegister() {
-      const name = document.getElementById("reg-name").value.trim();
-      const email = document.getElementById("reg-email").value.trim().toLowerCase();
-      const password = document.getElementById("reg-password").value;
-
-      if (!name || name.length < 2) {
-        showToast("Enter your name.", true);
-        return;
+    sendBtn.addEventListener('click', sendMessage);
+    promptEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
       }
-      if (!isValidEmail(email)) {
-        showToast("Enter a valid email.", true);
-        return;
-      }
-      if (!password || password.length < 6) {
-        showToast("Password must be at least 6 characters.", true);
-        return;
-      }
+    });
 
-      try {
-        const data = await callApi("/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password })
-        });
-        state.user = data.user;
-        afterAuth();
-        showToast("Account created.");
-      } catch (err) {
-        showToast(err.message, true);
-      }
-    }
+    clearBtn.addEventListener('click', async () => {
+      await api('/api/session/clear', { session_id: sessionId });
+      await loadHistory();
+    });
 
-    function signOut() {
-      state.user = null;
-      state.platformStatus = {};
-      document.getElementById("privateActions").classList.add("hidden");
-      document.getElementById("publicActions").classList.remove("hidden");
-      showView("landing");
-      showToast("Signed out.");
-    }
+    refreshBtn.addEventListener('click', loadHistory);
 
-    function setDashboardTab(tab) {
-      state.tab = tab;
-      ["overview", "integrations", "summarizer", "account"].forEach((name) => {
-        document.getElementById(`tab-${name}`).classList.toggle("hidden", name !== tab);
-        document.getElementById(`side-${name}`).classList.toggle("active", name === tab);
-      });
-
-      if (tab === "integrations") {
-        renderIntegrations();
-      }
-    }
-
-    async function loadPlatformStatus() {
-      if (!state.user) return;
-      try {
-        state.platformStatus = await callApi(`/api/platform/status/${encodeURIComponent(state.user.email)}`);
-      } catch (err) {
-        state.platformStatus = {};
-        showToast("Could not load integration status.", true);
-      }
-    }
-
-    function updateMetrics() {
-      const connected = Object.values(state.platformStatus).filter(Boolean).length;
-      document.getElementById("metric-connected").textContent = String(connected);
-    }
-
-    function integrationCard(item) {
-      const connected = Boolean(state.platformStatus[item.key]);
-      const fields = item.fields.map((f) => `
-        <div class="field">
-          <label class="label" for="${item.key}-${f.id}">${f.label}</label>
-          <input id="${item.key}-${f.id}" class="input" type="${f.type}" placeholder="${f.placeholder}" />
-        </div>
-      `).join("");
-
-      return `
-        <article class="integration-card">
-          <div class="integration-top">
-            <p class="integration-name">${item.label}</p>
-            <span class="badge ${connected ? "badge-on" : ""}">${connected ? "Connected" : "Not Connected"}</span>
-          </div>
-          <p class="integration-copy">${item.description}</p>
-          ${fields}
-          <div style="display:flex; gap:.42rem; flex-wrap:wrap; margin-top:.65rem;">
-            <button class="btn btn-primary" onclick="connectPlatform('${item.key}')">Connect</button>
-            ${item.key === "discord" ? '<button class="btn btn-ghost" onclick="openDiscordInvite()">Add Bot</button>' : ''}
-            <button class="btn btn-danger" onclick="disconnectPlatform('${item.key}')">Disconnect</button>
-          </div>
-        </article>
-      `;
-    }
-
-    function collectCredentials(platformKey) {
-      const item = integrations.find((x) => x.key === platformKey);
-      const credentials = { email: state.user?.email || "" };
-      if (!item) return credentials;
-
-      item.fields.forEach((f) => {
-        const value = document.getElementById(`${platformKey}-${f.id}`)?.value?.trim();
-        if (value) {
-          credentials[f.id] = value;
-        }
-      });
-      return credentials;
-    }
-
-    async function connectPlatform(platformKey) {
-      if (!state.user) {
-        showToast("Please login first.", true);
-        return;
-      }
-      try {
-        const credentials = collectCredentials(platformKey);
-        const data = await callApi("/api/platform/connect", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ platform: platformKey, credentials })
-        });
-        await loadPlatformStatus();
-        updateMetrics();
-        renderIntegrations();
-        if (data?.warning) {
-          showToast(`${platformKey} connected with warning: ${data.warning}`);
-        } else {
-          showToast(`${platformKey} connected.`);
-        }
-      } catch (err) {
-        if (err.inviteUrl) {
-          window.open(err.inviteUrl, "_blank", "noopener,noreferrer");
-        }
-        showToast(err.message, true);
-      }
-    }
-
-    async function disconnectPlatform(platformKey) {
-      if (!state.user) {
-        showToast("Please login first.", true);
-        return;
-      }
-      try {
-        await callApi("/api/platform/disconnect", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ platform: platformKey, email: state.user.email })
-        });
-        await loadPlatformStatus();
-        updateMetrics();
-        renderIntegrations();
-        showToast(`${platformKey} disconnected.`);
-      } catch (err) {
-        showToast(err.message, true);
-      }
-    }
-
-    function renderIntegrations() {
-      const host = document.getElementById("integrations-grid");
-      host.innerHTML = integrations.map((item) => integrationCard(item)).join("");
-    }
-
-    async function generateSummary() {
-      const transcript = document.getElementById("summary-input").value.trim();
-      const language = document.getElementById("summary-language").value;
-      if (!transcript) {
-        showToast("Please add input text first.", true);
-        return;
-      }
-
-      const output = document.getElementById("summary-output");
-      output.textContent = "Generating summary...";
-
-      try {
-        const data = await callApi("/api/summarize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript, language })
-        });
-        output.textContent = data.summary || "No summary returned.";
-        showToast(`Summary generated (${data.language || language}).`);
-      } catch (err) {
-        output.textContent = "Summary failed.";
-        showToast(err.message, true);
-      }
-    }
-
-    function clearSummary() {
-      document.getElementById("summary-input").value = "";
-      document.getElementById("summary-output").textContent = "Summary output will appear here.";
-    }
-
-    async function refreshDashboard() {
-      await loadPlatformStatus();
-      updateMetrics();
-      renderIntegrations();
-    }
-
-    showView("landing");
+    loadHistory();
   </script>
 </body>
 </html>
