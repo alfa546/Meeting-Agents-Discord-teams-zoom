@@ -100,10 +100,51 @@
       overflow: hidden;
       text-overflow: ellipsis;
       transition: all 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
 
     .chat-item:hover {
       background: #e5e5e5;
+    }
+
+    .chat-item-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chat-item-delete {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .chat-item:hover .chat-item-delete {
+      opacity: 1;
+    }
+
+    .chat-item-delete:hover {
+      color: #ef4444;
+    }
+
+    .chat-history-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      padding: 8px 12px 4px 12px;
+      margin-top: 8px;
     }
 
     .sidebar-footer {
@@ -471,7 +512,7 @@
     const chatContainer = document.getElementById('chatContainer');
     const promptEl = document.getElementById('prompt');
     const sendBtn = document.getElementById('sendBtn');
-    const chatHistory = document.getElementById('chatHistory');
+    const chatHistoryContainer = document.getElementById('chatHistory');
     const sidebar = document.getElementById('sidebar');
 
     // Auto-resize textarea
@@ -542,6 +583,63 @@
       return data;
     }
 
+    async function loadRecentChats() {
+      try {
+        const res = await fetch('/api/recent-chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        chatHistoryContainer.innerHTML = '';
+        
+        if (!data.chats || data.chats.length === 0) {
+          return;
+        }
+
+        // Add "Recent" label
+        const label = document.createElement('div');
+        label.className = 'chat-history-label';
+        label.textContent = 'Recent';
+        chatHistoryContainer.appendChild(label);
+
+        // Add each chat item
+        data.chats.forEach(chat => {
+          const chatItem = document.createElement('div');
+          chatItem.className = 'chat-item';
+          chatItem.innerHTML = `
+            <span class="chat-item-title" title="${chat.title}">${chat.title}</span>
+            <span class="chat-item-delete" onclick="deleteChat(event, '${chat.session_id}')">×</span>
+          `;
+          chatItem.addEventListener('click', () => loadChat(chat.session_id));
+          chatHistoryContainer.appendChild(chatItem);
+        });
+      } catch (e) {
+        console.error('Failed to load recent chats:', e);
+      }
+    }
+
+    function loadChat(customSessionId) {
+      sessionId = customSessionId;
+      localStorage.setItem('limo_session_id', sessionId);
+      loadHistory();
+      loadRecentChats();
+    }
+
+    async function deleteChat(event, chatSessionId) {
+      event.stopPropagation();
+      if (!confirm('Delete this chat?')) return;
+      
+      try {
+        await api('/api/session/clear', { session_id: chatSessionId });
+        loadRecentChats();
+        if (chatSessionId === sessionId) {
+          newChat();
+        }
+      } catch (e) {
+        console.error('Failed to delete chat:', e);
+      }
+    }
+
     async function loadHistory() {
       try {
         const data = await api('/api/session/history', { session_id: sessionId });
@@ -589,6 +687,7 @@
       try {
         const data = await api('/api/chat', { session_id: sessionId, message: text });
         content.textContent = data.answer || 'No response';
+        loadRecentChats();
       } catch (err) {
         content.textContent = 'Error: ' + err.message;
       }
@@ -608,11 +707,13 @@
       sessionId = 'sess_' + Math.random().toString(36).slice(2, 10);
       localStorage.setItem('limo_session_id', sessionId);
       loadHistory();
+      loadRecentChats();
     }
 
-    // Focus on load
+    // Focus on load and load recent chats
     promptEl.focus();
     loadHistory();
+    loadRecentChats();
   </script>
 </body>
 </html>

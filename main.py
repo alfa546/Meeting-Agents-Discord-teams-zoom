@@ -175,6 +175,12 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Load chat data from disk when app starts"""
+    _load_chat_data()
+
+
 @app.get("/api/health")
 async def health():
     provider = "groq" if _get_client() else "local-fallback"
