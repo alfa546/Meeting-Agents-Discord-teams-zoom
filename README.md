@@ -9,7 +9,7 @@ This project is now focused only on chatbot functionality.
 
 - Provides a clean web chat interface
 - Supports multi-session chat by session ID
-- Uses Groq API when `GROQ_API_KEY` is configured
+- Uses OpenRouter API when `OPENROUTER_API_KEY` is configured
 - Automatically falls back to local replies if API key is missing
 - Exposes simple API endpoints for chat, chat history, and clear history
 
@@ -17,7 +17,7 @@ This project is now focused only on chatbot functionality.
 
 - FastAPI
 - Jinja2 templates (web UI)
-- Groq Python SDK (LLM provider)
+- OpenRouter Python SDK (LLM provider)
 
 ## Project Structure
 
@@ -49,7 +49,8 @@ pip install -r requirements.txt
 3. Create `.env` file:
 
 ```env
-GROQ_API_KEY=your_groq_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=openrouter/elephant-alpha
 ```
 
 ## Run
@@ -72,7 +73,7 @@ Open: `http://localhost:8000`
 ```bash
 curl -X POST http://localhost:8000/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"session_id":"demo-user","message":"Hello LIMO"}'
+  -d '{"session_id":"demo-user","message":"Hello LIMO","model":"openrouter/elephant-alpha"}'
 ```
 
 ## Notes

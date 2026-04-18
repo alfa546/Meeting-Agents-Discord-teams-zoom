@@ -187,6 +187,40 @@
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
     }
 
+    .model-panel {
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+      border: 1px solid rgba(147, 112, 219, 0.2);
+    }
+
+    .model-label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #9d8fe0;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .model-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(36, 36, 62, 0.7);
+      border: 1px solid rgba(147, 112, 219, 0.4);
+      border-radius: 10px;
+      color: #e0d7ff;
+      font-size: 13px;
+    }
+
+    .status-chip {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #c7bfff;
+    }
+
     /* Main Chat Area */
     .main-content {
       flex: 1;
@@ -640,6 +674,13 @@
       <div class="chat-history" id="chatHistory"></div>
 
       <div class="sidebar-footer">
+        <div class="model-panel">
+          <label class="model-label" for="modelSelect">OpenRouter Model</label>
+          <select class="model-select" id="modelSelect">
+            <option value="openrouter/elephant-alpha">openrouter/elephant-alpha</option>
+          </select>
+          <div class="status-chip" id="providerStatus">Provider: checking...</div>
+        </div>
         <div class="sidebar-footer-item" onclick="alert('Settings')">⚙️ Settings</div>
         <div class="sidebar-footer-item" onclick="alert('Help & FAQ')">❓ Help</div>
       </div>
@@ -717,6 +758,15 @@
     const sendBtn = document.getElementById('sendBtn');
     const chatHistoryContainer = document.getElementById('chatHistory');
     const sidebar = document.getElementById('sidebar');
+    const modelSelect = document.getElementById('modelSelect');
+    const providerStatus = document.getElementById('providerStatus');
+
+    let selectedModel = localStorage.getItem('limo_selected_model') || 'openrouter/elephant-alpha';
+    modelSelect.value = selectedModel;
+    modelSelect.addEventListener('change', function() {
+      selectedModel = this.value;
+      localStorage.setItem('limo_selected_model', selectedModel);
+    });
 
     // Auto-resize textarea
     promptEl.addEventListener('input', function() {
@@ -874,6 +924,17 @@
       }
     }
 
+    async function refreshProviderStatus() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        const liveModel = data.model || selectedModel;
+        providerStatus.textContent = `Provider: ${data.provider} | Model: ${liveModel}`;
+      } catch (e) {
+        providerStatus.textContent = 'Provider: unavailable';
+      }
+    }
+
     function loadChat(customSessionId) {
       sessionId = customSessionId;
       localStorage.setItem('limo_session_id', sessionId);
@@ -941,7 +1002,7 @@
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
       try {
-        const data = await api('/api/chat', { session_id: sessionId, message: text });
+        const data = await api('/api/chat', { session_id: sessionId, message: text, model: selectedModel });
         content.textContent = data.answer || 'No response';
         loadRecentChats();
       } catch (err) {
@@ -970,6 +1031,7 @@
     promptEl.focus();
     loadHistory();
     loadRecentChats();
+    refreshProviderStatus();
   </script>
 </body>
 </html>

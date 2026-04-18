@@ -10,9 +10,9 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 try:
-    from groq import Groq
+    from openrouter import OpenRouter
 except Exception:  # pragma: no cover
-    Groq = None
+    OpenRouter = None
 
 load_dotenv()
 
@@ -23,6 +23,7 @@ SYSTEM_PROMPT = (
     "You are LIMO Agent, a helpful AI chatbot like GPT. "
     "Answer clearly, accurately, and with practical steps when useful."
 )
+DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/elephant-alpha")
 
 # Data directory for persistent storage
 DATA_DIR = "data"
@@ -112,6 +113,7 @@ def _update_chat_activity(session_id: str):
 class ChatRequest(BaseModel):
     session_id: str = Field(min_length=1, max_length=120)
     message: str = Field(min_length=1, max_length=8000)
+    model: str = Field(default=DEFAULT_MODEL, min_length=3, max_length=200)
 
 
 class SessionRequest(BaseModel):
@@ -119,10 +121,10 @@ class SessionRequest(BaseModel):
 
 
 def _get_client():
-    api_key = os.getenv("GROQ_API_KEY", "").strip()
-    if not api_key or Groq is None:
+    api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    if not api_key or OpenRouter is None:
         return None
-    return Groq(api_key=api_key)
+    return OpenRouter(api_key=api_key)
 
 
 def _local_fallback(user_message: str) -> str:
@@ -136,7 +138,7 @@ def _local_fallback(user_message: str) -> str:
     return "LIMO Agent is ready. Ask anything and I will help with clear, practical answers."
 
 
-def _chat_completion(session_id: str, user_message: str) -> str:
+def _chat_completion(session_id: str, user_message: str, model: str) -> str:
     history = CHAT_SESSIONS.setdefault(session_id, [])
     history.append({"role": "user", "content": user_message, "at": datetime.utcnow().isoformat() + "Z"})
     _save_chat_data()
@@ -154,8 +156,8 @@ def _chat_completion(session_id: str, user_message: str) -> str:
         messages.append({"role": item["role"], "content": item["content"]})
 
     try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        completion = client.chat.send(
+            model=model,
             messages=messages,
             temperature=0.4,
             max_tokens=1000,
@@ -183,19 +185,21 @@ async def startup_event():
 
 @app.get("/api/health")
 async def health():
-    provider = "groq" if _get_client() else "local-fallback"
+    provider = "openrouter" if _get_client() else "local-fallback"
     return {
         "status": "online",
         "app": "LIMO Agent",
         "provider": provider,
+        "model": DEFAULT_MODEL,
         "active_sessions": len(CHAT_SESSIONS),
     }
 
 
 @app.post("/api/chat")
 async def chat(payload: ChatRequest):
-    answer = _chat_completion(payload.session_id.strip(), payload.message.strip())
-    return {"answer": answer, "session_id": payload.session_id}
+    requested_model = payload.model.strip() or DEFAULT_MODEL
+    answer = _chat_completion(payload.session_id.strip(), payload.message.strip(), requested_model)
+    return {"answer": answer, "session_id": payload.session_id, "model": requested_model}
 
 
 @app.post("/api/session/history")
